@@ -1,40 +1,256 @@
-<h1>Tienda Online</h1>
+<!-- app.component.html -->
+<!-- HTML mejorado para Angular + Bootstrap -->
 
-<h2>Productos</h2>
+<div class="store-page">
 
-@for (producto of productos; track producto.id) {
-  <div>
-    <h3>{{ producto.nombre }}</h3>
-    <p>Precio: ${{ producto.precio }}</p>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark store-navbar sticky-top">
+    <div class="container">
 
-    <button (click)="agregarAlCarrito(producto)">
-      Agregar al carrito
-    </button>
-  </div>
-}
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
+        <span class="brand-icon">🛍️</span>
+        <span>Tienda Online</span>
+      </a>
 
-<hr>
+      <div class="ms-auto">
+        <a href="#carrito" class="cart-pill text-decoration-none">
+          🛒 {{ carrito.length }} producto(s)
+        </a>
+      </div>
 
-<h2>Carrito de compras</h2>
-
-@if (carrito.length === 0) {
-  <p>El carrito está vacío.</p>
-} @else {
-  @for (item of carrito; track $index) {
-    <div>
-      <p>{{ item.nombre }} - ${{ item.precio }}</p>
-
-      <button (click)="eliminarDelCarrito($index)">
-        Eliminar
-      </button>
     </div>
-  }
+  </nav>
 
-  <h3>Total: ${{ total }}</h3>
+  <!-- HERO -->
+  <header class="store-hero">
+    <div class="container">
+      <div class="row align-items-center g-5">
 
-  <button (click)="pagar()">
-    Pagar
-  </button>
-}
+        <div class="col-lg-7">
+          <span class="hero-badge">
+            Compra fácil, rápida y segura
+          </span>
 
-<p>{{ mensajePago }}</p>
+          <h1 class="hero-title">
+            Compra tus productos favoritos en un solo lugar
+          </h1>
+
+          <p class="hero-text">
+            Explora el catálogo, agrega productos al carrito y revisa el total de tu compra de forma simple.
+          </p>
+
+          <div class="d-flex flex-wrap gap-3 mt-4">
+            <a href="#productos" class="btn btn-warning btn-lg fw-bold rounded-pill px-4 shadow-sm">
+              Ver productos
+            </a>
+
+            <a href="#carrito" class="btn btn-outline-light btn-lg fw-semibold rounded-pill px-4">
+              Ver carrito
+            </a>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="hero-card">
+
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="hero-card-icon">
+                ✓
+              </div>
+
+              <div>
+                <h5 class="fw-bold mb-1">
+                  Compra segura
+                </h5>
+                <p class="text-secondary mb-0 small">
+                  Carrito actualizado en tiempo real
+                </p>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-4">
+                <div class="mini-feature">
+                  <div class="mini-icon">⚡</div>
+                  <span>Rápido</span>
+                </div>
+              </div>
+
+              <div class="col-4">
+                <div class="mini-feature">
+                  <div class="mini-icon">📱</div>
+                  <span>Responsive</span>
+                </div>
+              </div>
+
+              <div class="col-4">
+                <div class="mini-feature">
+                  <div class="mini-icon">💳</div>
+                  <span>Pago</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="container store-content">
+    <div class="row g-4 align-items-start">
+
+      <!-- PRODUCTOS -->
+      <section class="col-lg-8" id="productos">
+
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Catálogo</span>
+            <h2>Productos disponibles</h2>
+            <p>
+              Selecciona los productos que deseas comprar.
+            </p>
+          </div>
+        </div>
+
+        @if (productos.length === 0) {
+          <div class="empty-products">
+            <div class="empty-icon">📦</div>
+
+            <h4 class="fw-bold">
+              No hay productos disponibles
+            </h4>
+
+            <p class="text-secondary mb-0">
+              Cuando agregues productos en tu arreglo, aparecerán en esta sección.
+            </p>
+          </div>
+        } @else {
+          <div class="row g-4">
+
+            @for (producto of productos; track producto.id) {
+              <div class="col-md-6 col-xl-4">
+                <article class="product-card h-100">
+
+                  <div class="product-image">
+                    <span>📦</span>
+                  </div>
+
+                  <div class="product-body">
+                    <span class="product-tag">
+                      Disponible
+                    </span>
+
+                    <h3>
+                      {{ producto.nombre }}
+                    </h3>
+
+                    <p>
+                      Producto listo para agregar al carrito de compras.
+                    </p>
+                  </div>
+
+                  <div class="product-footer">
+                    <div class="price-box">
+                      <small>Precio</small>
+                      <strong>${{ producto.precio }}</strong>
+                    </div>
+
+                    <button class="btn btn-dark w-100 rounded-pill fw-semibold"
+                            (click)="agregarAlCarrito(producto)">
+                      🛒 Agregar
+                    </button>
+                  </div>
+
+                </article>
+              </div>
+            }
+
+          </div>
+        }
+
+      </section>
+
+      <!-- CARRITO -->
+      <aside class="col-lg-4" id="carrito">
+        <div class="cart-card">
+
+          <div class="cart-header">
+            <div>
+              <h2>Carrito</h2>
+              <p>Resumen de tu compra</p>
+            </div>
+
+            <div class="cart-header-icon">
+              🛒
+            </div>
+          </div>
+
+          <div class="cart-body">
+
+            @if (carrito.length === 0) {
+              <div class="cart-empty">
+                <div class="cart-empty-icon">
+                  🛒
+                </div>
+
+                <h5>
+                  Tu carrito está vacío
+                </h5>
+
+                <p>
+                  Agrega productos para ver el resumen de compra.
+                </p>
+              </div>
+            } @else {
+
+              <div class="cart-list">
+                @for (item of carrito; track $index) {
+                  <div class="cart-item">
+
+                    <div>
+                      <h6>
+                        {{ item.nombre }}
+                      </h6>
+
+                      <span>
+                        ${{ item.precio }}
+                      </span>
+                    </div>
+
+                    <button class="btn btn-outline-danger btn-sm rounded-pill"
+                            (click)="eliminarDelCarrito($index)">
+                      Eliminar
+                    </button>
+
+                  </div>
+                }
+              </div>
+
+              <div class="cart-total">
+                <span>Total a pagar</span>
+                <strong>${{ total }}</strong>
+              </div>
+
+              <button class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow-sm"
+                      (click)="pagar()">
+                💳 Pagar ahora
+              </button>
+            }
+
+            @if (mensajePago) {
+              <div class="alert alert-info mt-4 mb-0 rounded-4">
+                {{ mensajePago }}
+              </div>
+            }
+
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+</div>

@@ -46,7 +46,7 @@ def procesar_pagos(data: dict):
     }
 
     response = requests.post(
-        "http://127.0.0.1:8002/pagos/directo/procesar",
+        "http://app-pagos:8002/pagos/directo/procesar",
 
         json=payload
     )
