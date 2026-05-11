@@ -1,0 +1,40 @@
+<h1>Tienda Online</h1>
+
+<h2>Productos</h2>
+
+@for (producto of productos; track producto.id) {
+  <div>
+    <h3>{{ producto.nombre }}</h3>
+    <p>Precio: ${{ producto.precio }}</p>
+
+    <button (click)="agregarAlCarrito(producto)">
+      Agregar al carrito
+    </button>
+  </div>
+}
+
+<hr>
+
+<h2>Carrito de compras</h2>
+
+@if (carrito.length === 0) {
+  <p>El carrito está vacío.</p>
+} @else {
+  @for (item of carrito; track $index) {
+    <div>
+      <p>{{ item.nombre }} - ${{ item.precio }}</p>
+
+      <button (click)="eliminarDelCarrito($index)">
+        Eliminar
+      </button>
+    </div>
+  }
+
+  <h3>Total: ${{ total }}</h3>
+
+  <button (click)="pagar()">
+    Pagar
+  </button>
+}
+
+<p>{{ mensajePago }}</p>

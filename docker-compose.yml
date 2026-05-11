@@ -1,0 +1,22 @@
+services:
+
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "8001:8001"
+
+  app-pagos:
+    build: ./app-pagos
+    container_name: app-pagos
+    ports:
+      - "8002:8002"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "4200:80"
+
+    depends_on:
+      - backend
