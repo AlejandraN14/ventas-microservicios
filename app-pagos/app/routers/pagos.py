@@ -1,29 +1,22 @@
 import logging
 import os
+import uuid
 from datetime import datetime, timedelta
-from decimal import Decimal
 from itertools import count
 from threading import Lock
-from typing import Dict, List
+from typing import Dict
 
 import mercadopago
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.crud import pago as crud_pago
-from app.database import get_db
 from app.schemas.pago import (
     PagoCancelarResponse,
-    PagoCreate,
     PagoCreateCheckoutRequest,
     PagoCreateCheckoutResponse,
     PagoDirectoRequest,
     PagoDirectoResponse,
     PagoEstadoResponse,
-    PagoEstadoUpdate,
-    PagoResponse,
-    PagoUpdate,
     WebhookAckResponse,
 )
 
@@ -32,6 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/pagos", tags=["pagos"])
 
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
+MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "")
 MP_SUCCESS_URL = os.getenv("MP_SUCCESS_URL", "https://www.mercadopago.cl")
 MP_FAILURE_URL = os.getenv("MP_FAILURE_URL", "https://www.mercadopago.cl")
 MP_PENDING_URL = os.getenv("MP_PENDING_URL", "https://www.mercadopago.cl")
@@ -42,8 +36,27 @@ OPERACIONES_PAGO: Dict[int, dict] = {}
 OPERACIONES_LOCK = Lock()
 OPERACIONES_SEQ = count(start=1_000_000)
 
-
 ESTADOS_FINALES = {"PAGADO", "RECHAZADO", "CANCELADO", "EXPIRADO", "ANULADO"}
+
+
+def _generate_external_reference(id_usuario: int) -> str:
+    """Genera una referencia externa única"""
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    return f"USR{id_usuario}-{timestamp}-{uuid.uuid4().hex[:8]}"
+
+
+def _map_mp_status(mp_status: str) -> str:
+    """Mapea estados de MercadoPago a estados internos"""
+    mapping = {
+        "approved": "PAGADO",
+        "pending": "PENDIENTE",
+        "in_process": "PENDIENTE",
+        "rejected": "RECHAZADO",
+        "cancelled": "CANCELADO",
+        "refunded": "ANULADO",
+        "charged_back": "ANULADO",
+    }
+    return mapping.get(mp_status, "PENDIENTE")
 
 
 def _registrar_operacion(payload: PagoDirectoRequest, external_reference: str, mp_payment_id: int | None, estado: str) -> int:
@@ -58,7 +71,6 @@ def _registrar_operacion(payload: PagoDirectoRequest, external_reference: str, m
             "mp_payment_id": mp_payment_id,
             "estado": estado,
             "creado_en": datetime.utcnow(),
-            "id_pago_persistido": None,
         }
     return id_operacion
 
@@ -92,37 +104,14 @@ def _expirar_si_corresponde(id_operacion: int) -> dict | None:
         return operacion
 
 
-def _guardar_pago_si_aprobado(db: Session, operacion: dict) -> int:
-    if operacion.get("id_pago_persistido"):
-        return operacion["id_pago_persistido"]
-
-    now = datetime.utcnow()
-    pago_db = crud_pago.create_pago(
-        db=db,
-        pago=PagoCreate(
-            id_usuario=operacion["id_usuario"],
-            id_suscripcion=None,
-            id_metodo_pago=1,
-            periodo_anio=now.year,
-            periodo_mes=now.month,
-            monto_total=Decimal(str(operacion["monto"])),
-            estado_pago="PAGADO",
-            codigo_transaccion=str(operacion.get("mp_payment_id")) if operacion.get("mp_payment_id") else None,
-            observacion=operacion["external_reference"],
-        ),
-    )
-    operacion["id_pago_persistido"] = pago_db.id_pago
-    return pago_db.id_pago
-
-
 @router.post("/crear", response_model=PagoCreateCheckoutResponse, status_code=status.HTTP_201_CREATED)
-def crear_pago_checkout(payload: PagoCreateCheckoutRequest, db: Session = Depends(get_db)):
+def crear_pago_checkout(payload: PagoCreateCheckoutRequest):
     if not MP_ACCESS_TOKEN:
         raise HTTPException(status_code=500, detail="MP_ACCESS_TOKEN no configurado")
 
     logger.info("[pagos] Creación de pago iniciada id_usuario=%s monto=%s", payload.id_usuario, payload.monto)
 
-    external_reference = crud_pago.generate_external_reference(payload.id_usuario)
+    external_reference = _generate_external_reference(payload.id_usuario)
     sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
     preference_data = {
         "items": [{"title": payload.descripcion, "quantity": 1, "currency_id": "CLP", "unit_price": float(payload.monto)}],
@@ -140,7 +129,6 @@ def crear_pago_checkout(payload: PagoCreateCheckoutRequest, db: Session = Depend
     if preference_response.get("status") not in (200, 201) or not init_point:
         raise HTTPException(status_code=502, detail="No fue posible crear preferencia en Mercado Pago")
 
-    # Solo se crea operación temporal para checkout externo. Persistencia real ocurre al aprobarse.
     operacion_id = _registrar_operacion(
         payload=PagoDirectoRequest(
             id_usuario=payload.id_usuario,
@@ -157,7 +145,6 @@ def crear_pago_checkout(payload: PagoCreateCheckoutRequest, db: Session = Depend
         mp_payment_id=None,
         estado="PENDIENTE",
     )
-    _actualizar_operacion(operacion_id, "PENDIENTE")
 
     return PagoCreateCheckoutResponse(
         success=True,
@@ -167,66 +154,58 @@ def crear_pago_checkout(payload: PagoCreateCheckoutRequest, db: Session = Depend
 
 
 @router.get("/{id_pago}/estado", response_model=PagoEstadoResponse)
-def consultar_estado_pago(id_pago: int, db: Session = Depends(get_db)):
+def consultar_estado_pago(id_pago: int):
     operacion = _expirar_si_corresponde(id_pago)
-    if operacion:
-        return PagoEstadoResponse(id_pago=id_pago, estado=operacion["estado"])
-
-    db_pago = crud_pago.get_pago(db, pago_id=id_pago)
-    if not db_pago:
+    if not operacion:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return PagoEstadoResponse(id_pago=id_pago, estado=db_pago.estado_pago)
+    return PagoEstadoResponse(id_pago=id_pago, estado=operacion["estado"])
 
 
 @router.post("/{id_pago}/cancelar", response_model=PagoCancelarResponse)
-def cancelar_pago(id_pago: int, db: Session = Depends(get_db)):
+def cancelar_pago(id_pago: int):
     operacion = _expirar_si_corresponde(id_pago)
-    if operacion:
-        estado_actual = operacion["estado"]
-        if estado_actual in {"PAGADO", "RECHAZADO", "EXPIRADO", "CANCELADO"}:
-            return PagoCancelarResponse(success=True, message="El pago ya tiene un estado final", data=PagoEstadoResponse(id_pago=id_pago, estado=estado_actual))
-
-        mp_payment_id = operacion.get("mp_payment_id")
-        if mp_payment_id and MP_ACCESS_TOKEN:
-            try:
-                requests.put(
-                    f"https://api.mercadopago.com/v1/payments/{mp_payment_id}",
-                    headers={"Authorization": f"Bearer {MP_ACCESS_TOKEN}"},
-                    json={"status": "cancelled"},
-                    timeout=10,
-                )
-            except Exception as error:  # noqa: BLE001
-                logger.warning("[pagos] No fue posible cancelar en MP id_pago=%s error=%s", id_pago, error)
-
-        _actualizar_operacion(id_pago, "CANCELADO")
-        return PagoCancelarResponse(success=True, message="Pago cancelado", data=PagoEstadoResponse(id_pago=id_pago, estado="CANCELADO"))
-
-    db_pago = crud_pago.get_pago(db, pago_id=id_pago)
-    if not db_pago:
+    if not operacion:
         raise HTTPException(status_code=404, detail="Pago no encontrado")
+    
+    estado_actual = operacion["estado"]
+    if estado_actual in ESTADOS_FINALES:
+        return PagoCancelarResponse(
+            success=True, 
+            message="El pago ya tiene un estado final", 
+            data=PagoEstadoResponse(id_pago=id_pago, estado=estado_actual)
+        )
 
-    db_pago = crud_pago.update_estado_pago(db, pago_id=id_pago, estado="CANCELADO")
-    return PagoCancelarResponse(success=True, message="Pago cancelado", data=PagoEstadoResponse(id_pago=id_pago, estado=db_pago.estado_pago))
+    mp_payment_id = operacion.get("mp_payment_id")
+    if mp_payment_id and MP_ACCESS_TOKEN:
+        try:
+            requests.put(
+                f"https://api.mercadopago.com/v1/payments/{mp_payment_id}",
+                headers={"Authorization": f"Bearer {MP_ACCESS_TOKEN}"},
+                json={"status": "cancelled"},
+                timeout=10,
+            )
+        except Exception as error:
+            logger.warning("[pagos] No fue posible cancelar en MP id_pago=%s error=%s", id_pago, error)
+
+    _actualizar_operacion(id_pago, "CANCELADO")
+    return PagoCancelarResponse(
+        success=True, 
+        message="Pago cancelado", 
+        data=PagoEstadoResponse(id_pago=id_pago, estado="CANCELADO")
+    )
 
 
 @router.post("/directo/procesar", response_model=PagoDirectoResponse, status_code=status.HTTP_201_CREATED)
-def procesar_pago_directo(payload: PagoDirectoRequest, db: Session = Depends(get_db)):
+def procesar_pago_directo(payload: PagoDirectoRequest):
     if not MP_ACCESS_TOKEN:
-        return{
-            "success": True,
-            "message": "Pago Simulado Correctamente",
-            "data":{
-                "estado": "PAGADO",
-                "monto": float(payload.monto)
-            }
-        }
+        raise HTTPException(status_code=500, detail="MP_ACCESS_TOKEN no configurado")
+    if not MP_PUBLIC_KEY:
+        raise HTTPException(status_code=500, detail="MP_PUBLIC_KEY no configurado")
 
     logger.info("[pagos] INICIO PAGO DIRECTO id_usuario=%s monto=%s", payload.id_usuario, payload.monto)
     try:
-        import uuid
         auth_header = {"Authorization": f"Bearer {MP_ACCESS_TOKEN}", "Content-Type": "application/json"}
 
-        # Tokenizar tarjeta usando el access token como Bearer (server-side tokenization)
         token_payload = {
             "card_number": payload.numero_tarjeta,
             "expiration_month": payload.mes_vencimiento,
@@ -238,9 +217,9 @@ def procesar_pago_directo(payload: PagoDirectoRequest, db: Session = Depends(get
             },
         }
         token_response = requests.post(
-            "https://api.mercadopago.com/v1/card_tokens",
+            f"https://api.mercadopago.com/v1/card_tokens?public_key={MP_PUBLIC_KEY}",
             json=token_payload,
-            headers=auth_header,
+            headers={"Content-Type": "application/json"},
             timeout=20,
         )
         if token_response.status_code != 201:
@@ -251,9 +230,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest, db: Session = Depends(get
         if not card_token:
             raise HTTPException(status_code=502, detail="No fue posible tokenizar la tarjeta")
 
-        external_reference = crud_pago.generate_external_reference(payload.id_usuario)
-        # Nota: no incluir currency_id (rechazado por MP para CLP) ni payment_method_id
-        # (MP lo infiere automáticamente del token de tarjeta)
+        external_reference = _generate_external_reference(payload.id_usuario)
         payment_payload = {
             "token": card_token,
             "transaction_amount": float(payload.monto),
@@ -275,23 +252,18 @@ def procesar_pago_directo(payload: PagoDirectoRequest, db: Session = Depends(get
             raise HTTPException(status_code=502, detail=payment_data.get("message", "Error procesando pago"))
 
         mp_payment_id = payment_data.get("id")
-        estado = crud_pago.map_mp_status(payment_data.get("status"))
+        estado = _map_mp_status(payment_data.get("status"))
         id_operacion = _registrar_operacion(payload, external_reference, mp_payment_id, estado)
-
-        if estado == "PAGADO":
-            with OPERACIONES_LOCK:
-                operacion = OPERACIONES_PAGO[id_operacion]
-                _guardar_pago_si_aprobado(db, operacion)
 
         logger.info("[pagos] Pago directo creado id_operacion=%s mp_payment_id=%s estado=%s", id_operacion, mp_payment_id, estado)
         return PagoDirectoResponse(
             success=True,
-            message="Pago iniciado correctamente",
+            message="Pago procesado correctamente",
             data={"id_pago": id_operacion, "estado": estado, "mp_payment_id": mp_payment_id, "external_reference": external_reference},
         )
     except HTTPException:
         raise
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:
         logger.exception("[pagos] Error inesperado en pago directo")
         raise HTTPException(status_code=500, detail=str(error))
 
@@ -301,7 +273,6 @@ async def recibir_webhook(
     request: Request,
     type: str | None = Query(default=None),
     data_id: str | None = Query(default=None, alias="data.id"),
-    db: Session = Depends(get_db),
 ):
     payload = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
     event_type = type or payload.get("type")
@@ -311,20 +282,13 @@ async def recibir_webhook(
         return WebhookAckResponse(success=True, message="Evento ignorado")
 
     if not MP_ACCESS_TOKEN:
-        return {
-            "success": True,
-            "messange":"Pago simulado correctamente",
-            "data": {
-                "estado": "PAGADO",
-                "monto": float(payload.monto)
-            }
-        }
+        raise HTTPException(status_code=500, detail="MP_ACCESS_TOKEN no configurado")
 
     sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
     payment_resp = sdk.payment().get(event_data_id)
     payment = payment_resp.get("response", {})
     external_reference = payment.get("external_reference")
-    nuevo_estado = crud_pago.map_mp_status(payment.get("status", ""))
+    nuevo_estado = _map_mp_status(payment.get("status", ""))
 
     if external_reference:
         operacion_id, operacion = _buscar_operacion_por_external_reference(external_reference)
@@ -332,78 +296,7 @@ async def recibir_webhook(
             _actualizar_operacion(operacion_id, nuevo_estado)
             with OPERACIONES_LOCK:
                 if nuevo_estado == "PAGADO":
-                    operacion = OPERACIONES_PAGO[operacion_id]
                     operacion["mp_payment_id"] = payment.get("id")
-                    _guardar_pago_si_aprobado(db, operacion)
-            return WebhookAckResponse(success=True, message="Webhook procesado")
-
-        db_pago = crud_pago.get_pago_by_external_reference(db, external_reference)
-        if db_pago and db_pago.estado_pago != nuevo_estado:
-            crud_pago.update_estado_pago(db, pago_id=db_pago.id_pago, estado=nuevo_estado)
-            crud_pago.update_codigo_transaccion(db, pago_id=db_pago.id_pago, codigo=str(payment.get("id")))
+            logger.info("[pagos] Webhook procesado external_ref=%s nuevo_estado=%s", external_reference, nuevo_estado)
 
     return WebhookAckResponse(success=True, message="Webhook procesado")
-
-
-@router.get("/", response_model=List[PagoResponse])
-def read_pagos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud_pago.get_pagos(db, skip=skip, limit=limit)
-
-
-@router.get("/usuario/{id_usuario}", response_model=List[PagoResponse])
-def read_pagos_by_usuario(id_usuario: int, db: Session = Depends(get_db)):
-    return crud_pago.get_pagos_by_usuario(db, usuario_id=id_usuario)
-
-
-@router.get("/periodo/{anio}/{mes}", response_model=List[PagoResponse])
-def read_pagos_by_periodo(anio: int, mes: int, db: Session = Depends(get_db)):
-    if not 1 <= mes <= 12:
-        raise HTTPException(status_code=400, detail="El mes debe estar entre 1 y 12")
-    if anio < 2020:
-        raise HTTPException(status_code=400, detail="El año debe ser mayor o igual a 2020")
-    return crud_pago.get_pagos_by_periodo(db, anio=anio, mes=mes)
-
-
-@router.get("/suscripcion/{id_suscripcion}", response_model=List[PagoResponse])
-def read_pagos_by_suscripcion(id_suscripcion: int, db: Session = Depends(get_db)):
-    return crud_pago.get_pagos_by_suscripcion(db, suscripcion_id=id_suscripcion)
-
-
-@router.get("/{id}", response_model=PagoResponse)
-def read_pago(id: int, db: Session = Depends(get_db)):
-    db_pago = crud_pago.get_pago(db, pago_id=id)
-    if db_pago is None:
-        raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return db_pago
-
-
-@router.put("/{id}", response_model=PagoResponse)
-def update_pago(id: int, pago: PagoUpdate, db: Session = Depends(get_db)):
-    db_pago = crud_pago.update_pago(db, pago_id=id, pago=pago)
-    if db_pago is None:
-        raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return db_pago
-
-
-@router.patch("/{id}/estado", response_model=PagoResponse)
-def update_estado_pago(id: int, estado_update: PagoEstadoUpdate, db: Session = Depends(get_db)):
-    db_pago = crud_pago.update_estado_pago(db, pago_id=id, estado=estado_update.estado_pago)
-    if db_pago is None:
-        raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return db_pago
-
-
-@router.post("/{id}/anular", response_model=PagoResponse)
-def anular_pago(id: int, db: Session = Depends(get_db)):
-    db_pago = crud_pago.anular_pago(db, pago_id=id)
-    if db_pago is None:
-        raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return db_pago
-
-
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_pago(id: int, db: Session = Depends(get_db)):
-    success = crud_pago.delete_pago(db, pago_id=id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Pago no encontrado")
-    return None

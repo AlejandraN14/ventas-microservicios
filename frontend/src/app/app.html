@@ -229,6 +229,138 @@
                 }
               </div>
 
+              <!-- DATOS DE PAGO -->
+              <section class="payment-section">
+
+                <div class="payment-card">
+
+                  <div class="payment-header">
+                    <div class="payment-title">
+                      <span class="payment-kicker">Pago seguro</span>
+                      <h3>Datos de pago</h3>
+                      <p>Completa los datos para finalizar tu compra.</p>
+                    </div>
+
+                    <div class="payment-icon">
+                      💳
+                    </div>
+                  </div>
+
+                  <div class="payment-body">
+
+                    <!-- Tipo de pago -->
+                    <div class="form-group">
+                      <label for="metodoPago">Tipo de pago</label>
+                      <select
+                        id="metodoPago"
+                        class="form-select payment-input"
+                        [(ngModel)]="metodoPago"
+                      >
+                        <option value="credito">Crédito</option>
+                        <option value="debito">Débito</option>
+                      </select>
+                    </div>
+
+                    <!-- Número de tarjeta -->
+                    <div class="form-group">
+                      <label for="numeroTarjeta">Número de tarjeta</label>
+                      <div class="input-wrapper">
+                        <span class="input-icon">💳</span>
+                        <input
+                          id="numeroTarjeta"
+                          class="form-control payment-input with-icon"
+                          type="text"
+                          [(ngModel)]="numeroTarjeta"
+                          placeholder="4168818844447115"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Fecha y CVV -->
+                    <div class="row g-2">
+                      <div class="col-4">
+                        <div class="form-group">
+                          <label for="mesVencimiento">Mes</label>
+                          <input
+                            id="mesVencimiento"
+                            class="form-control payment-input"
+                            type="number"
+                            [(ngModel)]="mesVencimiento"
+                            placeholder="11"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col-4">
+                        <div class="form-group">
+                          <label for="anioVencimiento">Año</label>
+                          <input
+                            id="anioVencimiento"
+                            class="form-control payment-input"
+                            type="number"
+                            [(ngModel)]="anioVencimiento"
+                            placeholder="2030"
+                          />
+                        </div>
+                      </div>
+
+                      <div class="col-4">
+                        <div class="form-group">
+                          <label for="cvv">CVV</label>
+                          <input
+                            id="cvv"
+                            class="form-control payment-input"
+                            type="text"
+                            [(ngModel)]="cvv"
+                            placeholder="123"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Nombre titular -->
+                    <div class="form-group">
+                      <label for="nombreTitular">Nombre del titular</label>
+                      <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input
+                          id="nombreTitular"
+                          class="form-control payment-input with-icon"
+                          type="text"
+                          [(ngModel)]="nombreTitular"
+                          placeholder="APRO"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                      <label for="email">Correo electrónico</label>
+                      <div class="input-wrapper">
+                        <span class="input-icon">✉️</span>
+                        <input
+                          id="email"
+                          class="form-control payment-input with-icon"
+                          type="email"
+                          [(ngModel)]="email"
+                          placeholder="test@example.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="payment-security">
+                      <span>🔒</span>
+                      <p>
+                        Tus datos serán utilizados únicamente para procesar el pago.
+                      </p>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </section>
+
               <div class="cart-total">
                 <span>Total a pagar</span>
                 <strong>${{ total }}</strong>

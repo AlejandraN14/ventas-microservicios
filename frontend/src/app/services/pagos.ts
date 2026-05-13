@@ -7,10 +7,29 @@ import { Observable } from 'rxjs';
 })
 export class PagosService {
 
-  private apiUrl = 'http://127.0.0.1:8001/procesar-pagos';
+  private apiUrl = 'http://localhost:8001/procesar-pagos';
 
   constructor(private http: HttpClient) {}
-  procesarPago(monto: number): Observable<any> {
-    return this.http.post(this.apiUrl,{ monto});
+  
+  procesarPago(
+    monto: number,
+    metodoPago: string,
+    numeroTarjeta: string,
+    mesVencimiento: number,
+    anioVencimiento: number,
+    cvv: string,
+    nombreTitular: string,
+    email: string
+  ): Observable<any> {
+    return this.http.post(this.apiUrl, {
+      monto: monto,
+      metodo_pago: metodoPago,
+      numero_tarjeta: numeroTarjeta,
+      mes_vencimiento: mesVencimiento,
+      anio_vencimiento: anioVencimiento,
+      cvv: cvv,
+      nombre_titular: nombreTitular,
+      email: email
+      });
   }
 }

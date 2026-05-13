@@ -1,8 +1,4 @@
-/* You can add global styles to this file, and also import other style files */
-/* app.component.css */
-/* CSS profesional para la plantilla Bootstrap */
-
-:host {
+host {
   display: block;
 }
 
@@ -378,7 +374,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  max-height: 340px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 0.25rem;
 }
@@ -406,8 +402,8 @@
 
 .cart-total {
   border-top: 1px solid var(--line);
-  margin-top: 1.2rem;
-  padding-top: 1.2rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -423,6 +419,138 @@
   color: var(--dark);
 }
 
+/* DATOS DE PAGO INTEGRADOS AL CARRITO */
+.payment-section {
+  margin-top: 1rem;
+}
+
+.payment-card {
+  background: #fffdf5;
+  border: 1px solid rgba(255, 193, 7, 0.32);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.payment-header {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffffff 100%);
+  color: var(--dark);
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.28);
+}
+
+.payment-kicker {
+  display: inline-block;
+  color: #b77900;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+}
+
+.payment-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.payment-header p {
+  margin: 0.25rem 0 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.payment-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: var(--yellow);
+  color: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.payment-body {
+  padding: 1rem;
+}
+
+.form-group {
+  margin-bottom: 0.8rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+
+.payment-input {
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  font-size: 0.88rem;
+  color: #111827;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.payment-input:focus {
+  border-color: var(--yellow);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.18);
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+.with-icon {
+  padding-left: 42px;
+}
+
+.payment-security {
+  margin-top: 0.85rem;
+  background: #ffffff;
+  border: 1px solid rgba(255, 193, 7, 0.32);
+  border-radius: 16px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.payment-security span {
+  font-size: 1rem;
+  margin-top: 0.02rem;
+}
+
+.payment-security p {
+  margin: 0;
+  color: #6b4e00;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 /* RESPONSIVE */
 @media (max-width: 991px) {
   .store-hero {
@@ -431,6 +559,10 @@
 
   .cart-card {
     position: static;
+  }
+
+  .cart-list {
+    max-height: none;
   }
 }
 
@@ -459,5 +591,23 @@
 
   .product-image {
     height: 140px;
+  }
+
+  .cart-body {
+    padding: 1.1rem;
+  }
+
+  .payment-header {
+    padding: 0.9rem;
+  }
+
+  .payment-body {
+    padding: 0.9rem;
+  }
+
+  .payment-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.05rem;
   }
 }
