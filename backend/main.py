@@ -2,7 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 
+from database import engine, SessionLocal, Base
+from models.venta import Venta
+
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 origins = [
     "http://localhost:4200",
@@ -53,7 +58,25 @@ def procesar_pagos(data: dict):
             timeout=10
         )
 
-        return response.json()
+
+        resultado = response.json()
+
+        print("RESPUESTA APP-PAGOS:", resultado)
+
+        db = SessionLocal()
+
+        nueva_venta = Venta(
+            monto=data["monto"],
+            metodo_pago=data.get("metodo_pago", "desconocido"),
+            estado=resultado.get("data", {}).get("estado", "desconocido"),
+            mp_payment_id=str(resultado.get("data", {}).get("mp_payment_id"))
+        )
+
+        db.add(nueva_venta)
+        db.commit()
+        db.refresh(nueva_venta)
+
+        return resultado
 
     except requests.exceptions.ConnectionError:
         raise HTTPException(
@@ -66,3 +89,11 @@ def procesar_pagos(data: dict):
             status_code=500,
             detail=f"Error procesando el pago: {str(e)}"
         )
+    
+
+@app.get("/ventas")
+def obtener_ventas():
+    db = SessionLocal()
+    ventas = db.query(Venta).all()
+    db.close()
+    return ventas    

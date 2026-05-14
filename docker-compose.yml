@@ -1,12 +1,13 @@
 services:
-
   backend:
     build: ./backend
     container_name: backend
     ports:
       - "8001:8001"
     depends_on:
-      - app-pagos  
+      - app-pagos
+      - postgres
+    restart: always 
 
   app-pagos:
     build: ./app-pagos
@@ -14,13 +15,27 @@ services:
     ports:
       - "8002:8002"
     env_file:
-      - .env  
+      - ./app-pagos/.env
 
   frontend:
     build: ./frontend
     container_name: frontend
     ports:
       - "4200:80"
-
     depends_on:
       - backend
+
+  postgres:
+    image: postgres:16
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ventasdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -6,3 +6,4 @@ dist/
 .env
 *.pyc
 *.env
+postgres_data/
