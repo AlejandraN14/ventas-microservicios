@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ProductosService } from './services/productos';
 import { PagosService } from './services/pagos';
+import { UsuariosService } from './services/usuarios';
+import { CarritoService } from './services/carrito';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +19,13 @@ export class App implements OnInit {
   total:number = 0;
   metodoPago: string = 'debito';
   mensajePago: string = '';
+  mensajeSesion: string = '';
+  usuario: any = null;
+  modoAuth: 'login' | 'registro' = 'login';
+
+  nombreRegistro: string = '';
+  emailAuth: string = '';
+  passwordAuth: string = '';
 
   numeroTarjeta: string = '';
   mesVencimiento: number | null = null;
@@ -30,6 +39,8 @@ export class App implements OnInit {
   constructor(
     private productosService: ProductosService,
     private pagosService: PagosService,
+    private usuariosService: UsuariosService,
+    private carritoService: CarritoService,
     private cdr: ChangeDetectorRef
   ) {}
   
@@ -42,21 +53,87 @@ export class App implements OnInit {
     });
   }
 
-  agregarAlCarrito(producto: any): void {
-    this.carrito.push(producto);
-    this.calcularTotal();
+  autenticar(): void {
+    this.mensajeSesion = '';
+
+    const solicitud = this.modoAuth === 'registro'
+      ? this.usuariosService.registrar(this.nombreRegistro, this.emailAuth, this.passwordAuth)
+      : this.usuariosService.login(this.emailAuth, this.passwordAuth);
+
+    solicitud.subscribe({
+      next: (usuario) => {
+        this.usuario = usuario;
+        this.mensajeSesion = this.modoAuth === 'registro'
+          ? 'Usuario registrado correctamente'
+          : 'Sesion iniciada correctamente';
+        this.passwordAuth = '';
+        this.cargarCarrito();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.mensajeSesion = error?.error?.detail || 'No fue posible autenticar el usuario';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  eliminarDelCarrito(index: number): void{
-    this.carrito.splice(index, 1);
-    this.calcularTotal();
+  cerrarSesion(): void {
+    this.usuario = null;
+    this.carrito = [];
+    this.total = 0;
+    this.mensajeSesion = 'Sesion cerrada';
+    this.cdr.detectChanges();
+  }
+
+  cargarCarrito(): void {
+    if (!this.usuario?.id) {
+      return;
+    }
+
+    this.carritoService.obtener(this.usuario.id).subscribe(data => {
+      this.carrito = data;
+      this.calcularTotal();
+      this.cdr.detectChanges();
+    });
+  }
+
+  agregarAlCarrito(producto: any): void {
+    if (!this.usuario?.id) {
+      this.mensajeSesion = 'Debes iniciar sesion antes de agregar productos';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.carritoService.agregar(this.usuario.id, producto.id).subscribe(data => {
+      this.carrito = data;
+      this.calcularTotal();
+      this.cdr.detectChanges();
+    });
+  }
+
+  eliminarDelCarrito(item: any): void{
+    if (!this.usuario?.id) {
+      return;
+    }
+
+    this.carritoService.eliminar(this.usuario.id, item.id).subscribe(data => {
+      this.carrito = data;
+      this.calcularTotal();
+      this.cdr.detectChanges();
+    });
   }
 
   calcularTotal(): void {
-    this.total = this.carrito.reduce((suma, item) => suma + item.precio, 0)
+    this.total = this.carrito.reduce((suma, item) => suma + item.subtotal, 0)
   }
 
   pagar(): void {
+
+  if (!this.usuario?.id) {
+    this.mensajePago = 'Debes iniciar sesion antes de pagar';
+    this.cdr.detectChanges();
+    return;
+  }
 
   if (this.carrito.length === 0 || this.total <= 0) {
     this.mensajePago = 'Debes agregar productos al carrito antes de pagar';
@@ -81,6 +158,7 @@ export class App implements OnInit {
   this.cdr.detectChanges();
 
   this.pagosService.procesarPago(
+    this.usuario.id,
     this.total,
     this.metodoPago,
     this.numeroTarjeta,

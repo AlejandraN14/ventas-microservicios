@@ -12,6 +12,7 @@ export class PagosService {
   constructor(private http: HttpClient) {}
   
   procesarPago(
+    usuarioId: number,
     monto: number,
     metodoPago: string,
     numeroTarjeta: string,
@@ -22,6 +23,7 @@ export class PagosService {
     email: string
   ): Observable<any> {
     return this.http.post(this.apiUrl, {
+      usuario_id: usuarioId,
       monto: monto,
       metodo_pago: metodoPago,
       numero_tarjeta: numeroTarjeta,
