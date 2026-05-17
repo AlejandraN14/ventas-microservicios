@@ -20,6 +20,7 @@ origins = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
     "http://3.144.69.118",
+    "http://3.18.213.155",
 ]
 
 PAGOS_SERVICE_URL = os.getenv("PAGOS_SERVICE_URL", "http://app-pagos:8002")

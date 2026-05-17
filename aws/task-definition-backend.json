@@ -23,7 +23,7 @@
         },
         {
           "name": "PAGOS_SERVICE_URL",
-          "value": "http://3.18.220.160:8002"
+          "value": "http://18.222.61.154:8002"
         }
       ]
     }
