@@ -19,7 +19,7 @@
       "environment": [
         {
           "name": "DATABASE_URL",
-          "value": "postgresql://postgres:password123@ventasdb.cdgsmge4o3bp.us-east-2.rds.amazonaws.com:5432/ventasdb?sslmode=require"
+          "value": "postgresql://postgres:password123@ventasdb.cdgsmge4o3bp.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require"
         }
       ]
     }
