@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { getApiBaseUrl } from './api-config';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PagosService {
-
-  private apiUrl = 'http://3.133.148.130:8001/procesar-pagos';
 
   constructor(private http: HttpClient) {}
   
@@ -22,7 +21,7 @@ export class PagosService {
     nombreTitular: string,
     email: string
   ): Observable<any> {
-    return this.http.post(this.apiUrl, {
+    return this.http.post(`${getApiBaseUrl()}/procesar-pagos`, {
       usuario_id: usuarioId,
       monto: monto,
       metodo_pago: metodoPago,
