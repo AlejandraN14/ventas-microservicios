@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class PagosService {
 
-  private apiUrl = 'http://localhost:8001/procesar-pagos';
+  private apiUrl = 'http://18.191.31.5:8001/procesar-pagos';
 
   constructor(private http: HttpClient) {}
   

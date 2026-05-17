@@ -1,4 +1,5 @@
 import hashlib
+import os
 import secrets
 
 from fastapi import FastAPI, HTTPException
@@ -18,7 +19,10 @@ Base.metadata.create_all(bind=engine)
 origins = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "http://3.144.69.118",
 ]
+
+PAGOS_SERVICE_URL = os.getenv("PAGOS_SERVICE_URL", "http://app-pagos:8002")
 
 app.add_middleware(
     CORSMiddleware,
@@ -254,7 +258,7 @@ def procesar_pagos(data: dict):
 
     try:
         response = requests.post(
-            "http://app-pagos:8002/pagos/directo/procesar",
+            f"{PAGOS_SERVICE_URL}/pagos/directo/procesar",
             json=payload,
             timeout=10
         )
