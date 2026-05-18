@@ -1,4 +1,5 @@
 import hashlib
+import os
 import secrets
 
 from fastapi import FastAPI, HTTPException
@@ -16,16 +17,13 @@ app = FastAPI()
 # Crea las tablas declaradas en los modelos si todavia no existen.
 Base.metadata.create_all(bind=engine)
 
-# Origenes permitidos para que el frontend Angular pueda consumir la API.
-origins = [
-    "http://localhost:4200",
-    "http://127.0.0.1:4200",
-]
+# URL del microservicio de pagos; se puede cambiar desde variables de entorno.
+PAGOS_SERVICE_URL = os.getenv("PAGOS_SERVICE_URL", "http://app-pagos:8002")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -271,7 +269,7 @@ def procesar_pagos(data: dict):
     try:
         # Llama al microservicio de pagos dentro de la red de Docker Compose.
         response = requests.post(
-            "http://app-pagos:8002/pagos/directo/procesar",
+            f"{PAGOS_SERVICE_URL}/pagos/directo/procesar",
             json=payload,
             timeout=10
         )

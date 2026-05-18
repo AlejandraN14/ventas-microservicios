@@ -4,11 +4,11 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::570934198047:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "app-pagos",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ventas-app-pagos:latest",
+      "image": "570934198047.dkr.ecr.us-east-2.amazonaws.com/ventas-app-pagos:latest",
       "essential": true,
       "portMappings": [
         {
@@ -19,11 +19,11 @@
       "secrets": [
         {
           "name": "MP_ACCESS_TOKEN",
-          "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/ventas/MP_ACCESS_TOKEN"
+          "valueFrom": "arn:aws:ssm:us-east-2:570934198047:parameter/ventas/MP_ACCESS_TOKEN"
         },
         {
           "name": "MP_PUBLIC_KEY",
-          "valueFrom": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/ventas/MP_PUBLIC_KEY"
+          "valueFrom": "arn:aws:ssm:us-east-2:570934198047:parameter/ventas/MP_PUBLIC_KEY"
         }
       ]
     }

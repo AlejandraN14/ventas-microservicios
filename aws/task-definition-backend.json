@@ -4,11 +4,11 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::570934198047:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ventas-backend:latest",
+      "image": "570934198047.dkr.ecr.us-east-2.amazonaws.com/ventas-backend:latest",
       "essential": true,
       "portMappings": [
         {
@@ -19,7 +19,11 @@
       "environment": [
         {
           "name": "DATABASE_URL",
-          "value": "postgresql://postgres:postgres@postgres:5432/ventasdb"
+          "value": "postgresql://postgres:password123@ventasdb.cdgsmge4o3bp.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require"
+        },
+        {
+          "name": "PAGOS_SERVICE_URL",
+          "value": "http://18.222.61.154:8002"
         }
       ]
     }
