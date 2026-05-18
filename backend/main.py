@@ -13,8 +13,10 @@ from models.venta import Venta
 
 app = FastAPI()
 
+# Crea las tablas declaradas en los modelos si todavia no existen.
 Base.metadata.create_all(bind=engine)
 
+# Origenes permitidos para que el frontend Angular pueda consumir la API.
 origins = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
@@ -30,6 +32,7 @@ app.add_middleware(
 
 
 def get_db():
+    # Entrega una sesion de base de datos reutilizable por los endpoints.
     db = SessionLocal()
     try:
         return db
@@ -39,12 +42,14 @@ def get_db():
 
 
 def hash_password(password: str) -> str:
+    # Guarda la contrasena con salt para no almacenar el texto plano.
     salt = secrets.token_hex(16)
     password_hash = hashlib.sha256(f"{salt}:{password}".encode("utf-8")).hexdigest()
     return f"{salt}:{password_hash}"
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
+    # Recalcula el hash con el salt guardado y compara de forma segura.
     try:
         salt, password_hash = stored_hash.split(":", 1)
     except ValueError:
@@ -54,6 +59,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 
 def serializar_producto(producto: Producto) -> dict:
+    # Convierte el modelo SQLAlchemy a un diccionario listo para JSON.
     return {
         "id": producto.id,
         "nombre": producto.nombre,
@@ -63,6 +69,7 @@ def serializar_producto(producto: Producto) -> dict:
 
 
 def seed_productos():
+    # Inserta productos de ejemplo solo cuando la tabla esta vacia.
     db = SessionLocal()
     try:
         if db.query(Producto).count() == 0:
@@ -81,6 +88,7 @@ seed_productos()
 
 @app.post("/usuarios/registro")
 def registrar_usuario(data: dict):
+    # Normaliza los datos recibidos antes de validarlos y guardarlos.
     nombre = str(data.get("nombre", "")).strip()
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
@@ -109,6 +117,7 @@ def registrar_usuario(data: dict):
 
 @app.post("/usuarios/login")
 def iniciar_sesion(data: dict):
+    # El login devuelve los datos publicos del usuario si la clave es correcta.
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
 
@@ -125,6 +134,7 @@ def iniciar_sesion(data: dict):
 
 @app.get("/productos")
 def obtener_productos():
+    # Lista los productos ordenados para que el frontend los muestre establemente.
     db = SessionLocal()
     try:
         productos = db.query(Producto).order_by(Producto.id).all()
@@ -135,6 +145,7 @@ def obtener_productos():
 
 @app.post("/productos")
 def crear_producto(data: dict):
+    # Valida el producto antes de persistirlo en la base de datos.
     nombre = str(data.get("nombre", "")).strip()
     descripcion = str(data.get("descripcion", "")).strip()
 
@@ -161,6 +172,7 @@ def crear_producto(data: dict):
 
 @app.get("/usuarios/{usuario_id}/carrito")
 def obtener_carrito(usuario_id: int):
+    # Une carrito y productos para devolver cada item con su detalle y subtotal.
     db = SessionLocal()
     try:
         items = db.query(CarritoItem, Producto).join(Producto, Producto.id == CarritoItem.producto_id).filter(
@@ -181,6 +193,7 @@ def obtener_carrito(usuario_id: int):
 
 @app.post("/usuarios/{usuario_id}/carrito")
 def agregar_producto_carrito(usuario_id: int, data: dict):
+    # Si el producto ya esta en el carrito, aumenta su cantidad.
     producto_id = int(data.get("producto_id", 0))
     cantidad = int(data.get("cantidad", 1))
     if cantidad <= 0:
@@ -213,6 +226,7 @@ def agregar_producto_carrito(usuario_id: int, data: dict):
 
 @app.delete("/usuarios/{usuario_id}/carrito/{item_id}")
 def eliminar_item_carrito(usuario_id: int, item_id: int):
+    # Elimina solo items que pertenezcan al usuario indicado.
     db = SessionLocal()
     try:
         item = db.query(CarritoItem).filter(
@@ -230,6 +244,7 @@ def eliminar_item_carrito(usuario_id: int, item_id: int):
 
 @app.delete("/usuarios/{usuario_id}/carrito")
 def vaciar_carrito(usuario_id: int):
+    # Borra todos los productos del carrito del usuario.
     db = SessionLocal()
     try:
         db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
@@ -240,6 +255,7 @@ def vaciar_carrito(usuario_id: int):
 
 @app.post("/procesar-pagos")
 def procesar_pagos(data: dict):
+    # Adapta los datos del frontend al formato esperado por app-pagos.
     payload = { 
     "id_usuario": 1,
     "numero_tarjeta": data["numero_tarjeta"],
@@ -253,6 +269,7 @@ def procesar_pagos(data: dict):
 }
 
     try:
+        # Llama al microservicio de pagos dentro de la red de Docker Compose.
         response = requests.post(
             "http://app-pagos:8002/pagos/directo/procesar",
             json=payload,
@@ -266,6 +283,7 @@ def procesar_pagos(data: dict):
 
         db = SessionLocal()
 
+        # Registra la venta con el estado informado por el microservicio.
         nueva_venta = Venta(
             monto=data["monto"],
             metodo_pago=data.get("metodo_pago", "desconocido"),
@@ -279,6 +297,7 @@ def procesar_pagos(data: dict):
 
         usuario_id = data.get("usuario_id")
         if usuario_id:
+            # Despues de un pago exitoso se limpia el carrito del usuario.
             db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
             db.commit()
 
@@ -299,6 +318,7 @@ def procesar_pagos(data: dict):
 
 @app.get("/ventas")
 def obtener_ventas():
+    # Devuelve el historial de ventas registradas.
     db = SessionLocal()
     ventas = db.query(Venta).all()
     db.close()
