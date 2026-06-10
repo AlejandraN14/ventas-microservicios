@@ -34,6 +34,10 @@ export class App implements OnInit {
   nombreTitular: string = '';
   email: string = '';
 
+  mostrarComprobante: boolean = false;
+  comprobante: any = null;
+  mostrarFormPago: boolean = false;
+
 
 
   constructor(
@@ -127,6 +131,82 @@ export class App implements OnInit {
     this.total = this.carrito.reduce((suma, item) => suma + item.subtotal, 0)
   }
 
+  getProductIcon(nombre: string): string {
+    const n = nombre.toLowerCase();
+    if (n.includes('notebook') || n.includes('laptop') || n.includes('computador')) return '💻';
+    if (n.includes('mouse') || n.includes('raton')) return '🖱️';
+    if (n.includes('teclado')) return '⌨️';
+    if (n.includes('audifono') || n.includes('auricular') || n.includes('headphone')) return '🎧';
+    if (n.includes('silla') || n.includes('chair')) return '🪑';
+    if (n.includes('monitor') || n.includes('pantalla')) return '🖥️';
+    if (n.includes('disco') || n.includes('ssd') || n.includes('hdd') || n.includes('pendrive')) return '💾';
+    if (n.includes('camara') || n.includes('webcam')) return '📷';
+    if (n.includes('impresora')) return '🖨️';
+    if (n.includes('celular') || n.includes('telefono') || n.includes('movil')) return '📱';
+    if (n.includes('tablet') || n.includes('ipad')) return '📟';
+    if (n.includes('cable') || n.includes('cargador')) return '🔌';
+    return '📦';
+  }
+
+  getProductColor(nombre: string): string {
+    const n = nombre.toLowerCase();
+    if (n.includes('notebook') || n.includes('laptop') || n.includes('computador'))
+      return 'linear-gradient(145deg, #2d3a8c 0%, #4a5fc1 100%)';
+    if (n.includes('mouse') || n.includes('raton'))
+      return 'linear-gradient(145deg, #8b1a4a 0%, #c2436e 100%)';
+    if (n.includes('teclado'))
+      return 'linear-gradient(145deg, #0b5e6e 0%, #1a8fa3 100%)';
+    if (n.includes('audifono') || n.includes('auricular'))
+      return 'linear-gradient(145deg, #1a6b3a 0%, #2ea055 100%)';
+    if (n.includes('silla') || n.includes('chair'))
+      return 'linear-gradient(145deg, #7a3b00 0%, #b85c00 100%)';
+    if (n.includes('monitor') || n.includes('pantalla'))
+      return 'linear-gradient(145deg, #3d1f8a 0%, #6241c5 100%)';
+    if (n.includes('disco') || n.includes('ssd') || n.includes('hdd'))
+      return 'linear-gradient(145deg, #1f4e6b 0%, #2d7aad 100%)';
+    if (n.includes('celular') || n.includes('telefono'))
+      return 'linear-gradient(145deg, #1b5e3b 0%, #267a52 100%)';
+    return 'linear-gradient(145deg, #7a5c00 0%, #b88a00 100%)';
+  }
+
+  decrementarDelCarrito(item: any): void {
+    if (!this.usuario?.id) return;
+
+    if (item.cantidad <= 1) {
+      this.carritoService.eliminar(this.usuario.id, item.id).subscribe(data => {
+        this.carrito = data;
+        this.calcularTotal();
+        this.cdr.detectChanges();
+      });
+    } else {
+      this.carritoService.eliminar(this.usuario.id, item.id).subscribe(() => {
+        this.carritoService.agregar(this.usuario.id, item.producto.id, item.cantidad - 1).subscribe(data => {
+          this.carrito = data;
+          this.calcularTotal();
+          this.cdr.detectChanges();
+        });
+      });
+    }
+  }
+
+  cerrarComprobante(): void {
+    this.mostrarComprobante = false;
+    this.comprobante = null;
+    this.mostrarFormPago = false;
+    this.numeroTarjeta = '';
+    this.mesVencimiento = null;
+    this.anioVencimiento = null;
+    this.cvv = '';
+    this.nombreTitular = '';
+    this.email = '';
+    this.mensajePago = '';
+    this.cdr.detectChanges();
+  }
+
+  imprimirComprobante(): void {
+    window.print();
+  }
+
   pagar(): void {
 
   if (!this.usuario?.id) {
@@ -185,12 +265,24 @@ export class App implements OnInit {
       }
 
       const estado = respuesta?.data?.estado;
-      const mensaje = respuesta?.message;
 
       if (estado === 'PAGADO') {
-        this.mensajePago = 'Pago aprobado correctamente';
+        const itemsCompra = [...this.carrito];
+        this.comprobante = {
+          numero: respuesta?.data?.id_pago,
+          referencia: respuesta?.data?.external_reference,
+          mpPaymentId: respuesta?.data?.mp_payment_id,
+          monto: this.total,
+          metodoPago: this.metodoPago,
+          fecha: new Date(),
+          email: this.email,
+          titular: this.nombreTitular,
+          items: itemsCompra
+        };
+        this.mostrarComprobante = true;
         this.carrito = [];
         this.total = 0;
+        this.mensajePago = '';
 
       } else if (estado === 'RECHAZADO') {
         this.mensajePago = 'Pago rechazado';

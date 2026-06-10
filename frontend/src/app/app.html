@@ -1,77 +1,106 @@
 <div class="store-page">
-  <nav class="navbar navbar-expand-lg navbar-dark store-navbar sticky-top">
+
+  <!-- ── NAVBAR ──────────────────────────────────────────────── -->
+  <nav class="store-navbar sticky-top">
     <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="#">
-        <span>Tienda Online</span>
+      <a class="nav-brand" href="#">
+        <div class="brand-icon">T</div>
+        <span>TiendaOnline</span>
       </a>
 
-      <div class="ms-auto d-flex align-items-center gap-3">
+      <div class="nav-actions">
         @if (usuario) {
-          <span class="text-white small">Hola, {{ usuario.nombre }}</span>
-          <button class="btn btn-outline-light btn-sm rounded-pill" (click)="cerrarSesion()">Salir</button>
+          <span class="nav-user">{{ usuario.nombre }}</span>
+          <button class="btn-nav-outline" (click)="cerrarSesion()">Salir</button>
         }
-        <a href="#carrito" class="cart-pill text-decoration-none">
-          Carrito: {{ carrito.length }}
+        <a href="#carrito" class="cart-badge text-decoration-none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.98-1.7l1.62-8.3H6"/>
+          </svg>
+          <span>{{ carrito.length }}</span>
         </a>
       </div>
     </div>
   </nav>
 
+  <!-- ── HERO ────────────────────────────────────────────────── -->
   <header class="store-hero">
+    <div class="hero-glow hero-glow--blue"></div>
+    <div class="hero-glow hero-glow--violet"></div>
+
     <div class="container">
       <div class="row align-items-center g-5">
-        <div class="col-lg-7">
-          <span class="hero-badge">Sistema de ventas con microservicios</span>
-          <h1 class="hero-title">Compra productos con carrito y pago integrado</h1>
+        <div class="col-lg-6">
+          <span class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            Sistema de microservicios activo
+          </span>
+          <h1 class="hero-title">Compra rápido,<br>paga seguro.</h1>
           <p class="hero-text">
-            Frontend Angular, API REST FastAPI, microservicio de pagos y persistencia en PostgreSQL.
+            Plataforma desarrollada con Angular, FastAPI, PostgreSQL y arquitectura de microservicios.
           </p>
-
-          <div class="d-flex flex-wrap gap-3 mt-4">
-            <a href="#productos" class="btn btn-warning btn-lg fw-bold rounded-pill px-4 shadow-sm">Ver productos</a>
-            <a href="#carrito" class="btn btn-outline-light btn-lg fw-semibold rounded-pill px-4">Ver carrito</a>
+          <div class="hero-actions">
+            <a href="#productos" class="btn-cta-primary">Ver productos</a>
+            <a href="#carrito" class="btn-cta-secondary">Ver carrito</a>
           </div>
         </div>
 
-        <div class="col-lg-5">
-          <div class="hero-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="fw-bold mb-0">{{ modoAuth === 'login' ? 'Inicio de sesion' : 'Registro de usuario' }}</h5>
-              <button
-                class="btn btn-sm btn-outline-dark rounded-pill"
-                (click)="modoAuth = modoAuth === 'login' ? 'registro' : 'login'"
-              >
-                {{ modoAuth === 'login' ? 'Crear cuenta' : 'Ya tengo cuenta' }}
+        <div class="col-lg-6">
+          <div class="auth-card">
+            <div class="auth-card-header">
+              <div>
+                <h5 class="auth-title">{{ modoAuth === 'login' ? 'Bienvenido de vuelta' : 'Crear cuenta' }}</h5>
+                <p class="auth-subtitle">{{ modoAuth === 'login' ? 'Ingresa tus credenciales para continuar' : 'Completa tus datos para registrarte' }}</p>
+              </div>
+              <button class="auth-toggle" (click)="modoAuth = modoAuth === 'login' ? 'registro' : 'login'">
+                {{ modoAuth === 'login' ? 'Crear cuenta' : 'Iniciar sesión' }}
               </button>
             </div>
 
             @if (!usuario) {
               @if (modoAuth === 'registro') {
-                <div class="form-group mb-3">
-                  <label for="nombreRegistro">Nombre</label>
-                  <input id="nombreRegistro" class="form-control payment-input" [(ngModel)]="nombreRegistro" />
+                <div class="auth-field">
+                  <label for="nombreRegistro">Nombre completo</label>
+                  <div class="input-icon-wrap">
+                    <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <input id="nombreRegistro" class="auth-input" type="text" [(ngModel)]="nombreRegistro" placeholder="Juan Pérez" />
+                  </div>
                 </div>
               }
 
-              <div class="form-group mb-3">
-                <label for="emailAuth">Correo electronico</label>
-                <input id="emailAuth" class="form-control payment-input" type="email" [(ngModel)]="emailAuth" />
+              <div class="auth-field">
+                <label for="emailAuth">Correo electrónico</label>
+                <div class="input-icon-wrap">
+                  <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <input id="emailAuth" class="auth-input" type="email" [(ngModel)]="emailAuth" placeholder="correo@ejemplo.com" />
+                </div>
               </div>
 
-              <div class="form-group mb-3">
+              <div class="auth-field">
                 <label for="passwordAuth">Contraseña</label>
-                <input id="passwordAuth" class="form-control payment-input" type="password" [(ngModel)]="passwordAuth" />
+                <div class="input-icon-wrap">
+                  <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  <input id="passwordAuth" class="auth-input" type="password" [(ngModel)]="passwordAuth" placeholder="••••••••" />
+                </div>
               </div>
 
-              <button class="btn btn-dark w-100 rounded-pill fw-semibold" (click)="autenticar()">
-                {{ modoAuth === 'login' ? 'Entrar' : 'Registrarme' }}
+              <button class="btn-auth" (click)="autenticar()">
+                {{ modoAuth === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
             } @else {
-              <p class="text-secondary mb-0">Sesion activa para {{ usuario.email }}</p>
+              <div class="auth-active">
+                <div class="auth-active-icon">✓</div>
+                <div>
+                  <p class="auth-active-name">{{ usuario.nombre }}</p>
+                  <p class="auth-active-email">{{ usuario.email }}</p>
+                </div>
+              </div>
             }
 
             @if (mensajeSesion) {
-              <div class="alert alert-info mt-3 mb-0 rounded-4">{{ mensajeSesion }}</div>
+              <div class="auth-alert">{{ mensajeSesion }}</div>
             }
           </div>
         </div>
@@ -79,28 +108,31 @@
     </div>
   </header>
 
+  <!-- ── CONTENIDO ────────────────────────────────────────────── -->
   <main class="container store-content">
     <div class="row g-4 align-items-start">
+
+      <!-- Productos -->
       <section class="col-lg-8" id="productos">
         <div class="section-heading">
-          <div>
-            <span class="section-kicker">Catalogo</span>
-            <h2>Productos disponibles</h2>
-            <p>Selecciona los productos que deseas comprar.</p>
-          </div>
+          <span class="section-kicker">Catálogo</span>
+          <h2>Productos disponibles</h2>
+          <p>Selecciona los productos que deseas comprar.</p>
         </div>
 
         @if (productos.length === 0) {
           <div class="empty-products">
-            <h4 class="fw-bold">No hay productos disponibles</h4>
-            <p class="text-secondary mb-0">El backend aun no entrego productos.</p>
+            <h4>No hay productos disponibles</h4>
+            <p>El backend aún no entregó productos.</p>
           </div>
         } @else {
           <div class="row g-4">
             @for (producto of productos; track producto.id) {
               <div class="col-md-6 col-xl-4">
                 <article class="product-card h-100">
-                  <div class="product-image"><span>{{ producto.id }}</span></div>
+                  <div class="product-image" [style.background]="getProductColor(producto.nombre)">
+                    <span>{{ getProductIcon(producto.nombre) }}</span>
+                  </div>
                   <div class="product-body">
                     <span class="product-tag">Disponible</span>
                     <h3>{{ producto.nombre }}</h3>
@@ -109,9 +141,9 @@
                   <div class="product-footer">
                     <div class="price-box">
                       <small>Precio</small>
-                      <strong>${{ producto.precio }}</strong>
+                      <strong>${{ producto.precio | number }}</strong>
                     </div>
-                    <button class="btn btn-dark w-100 rounded-pill fw-semibold" (click)="agregarAlCarrito(producto)">
+                    <button class="btn-agregar" (click)="agregarAlCarrito(producto)">
                       Agregar
                     </button>
                   </div>
@@ -122,9 +154,16 @@
         }
       </section>
 
+      <!-- Carrito -->
       <aside class="col-lg-4" id="carrito">
         <div class="cart-card">
           <div class="cart-header">
+            <div class="cart-header-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.98-1.7l1.62-8.3H6"/>
+              </svg>
+            </div>
             <div>
               <h2>Carrito</h2>
               <p>Resumen de tu compra</p>
@@ -134,105 +173,191 @@
           <div class="cart-body">
             @if (!usuario) {
               <div class="cart-empty">
-                <h5>Inicia sesion</h5>
-                <p>Necesitas una cuenta para guardar carrito y pagar.</p>
+                <div class="cart-empty-icon">🔒</div>
+                <h5>Inicia sesión</h5>
+                <p>Necesitas una cuenta para guardar el carrito y pagar.</p>
               </div>
             } @else if (carrito.length === 0) {
               <div class="cart-empty">
-                <h5>Tu carrito esta vacio</h5>
+                <div class="cart-empty-icon">🛒</div>
+                <h5>Tu carrito está vacío</h5>
                 <p>Agrega productos para ver el resumen de compra.</p>
               </div>
             } @else {
               <div class="cart-list">
                 @for (item of carrito; track item.id) {
                   <div class="cart-item">
-                    <div>
-                      <h6>{{ item.producto.nombre }}</h6>
-                      <span>${{ item.producto.precio }} x {{ item.cantidad }}</span>
+                    <div class="cart-item-icon" [style.background]="getProductColor(item.producto.nombre)">
+                      {{ getProductIcon(item.producto.nombre) }}
                     </div>
-                    <button class="btn btn-outline-danger btn-sm rounded-pill" (click)="eliminarDelCarrito(item)">
-                      Eliminar
-                    </button>
+                    <div class="cart-item-info">
+                      <h6>{{ item.producto.nombre }}</h6>
+                      <span>${{ item.subtotal | number }}</span>
+                    </div>
+                    <div class="cart-item-right">
+                      <div class="qty-control">
+                        <button class="qty-btn" (click)="decrementarDelCarrito(item)">−</button>
+                        <span class="qty-value">{{ item.cantidad }}</span>
+                        <button class="qty-btn" (click)="agregarAlCarrito(item.producto)">+</button>
+                      </div>
+                      <button class="btn-ghost-danger" (click)="eliminarDelCarrito(item)" title="Quitar">✕</button>
+                    </div>
                   </div>
                 }
               </div>
 
-              <section class="payment-section">
-                <div class="payment-card">
-                  <div class="payment-header">
-                    <div class="payment-title">
-                      <span class="payment-kicker">Pago seguro</span>
-                      <h3>Datos de pago</h3>
-                      <p>Completa los datos para finalizar tu compra.</p>
-                    </div>
-                  </div>
-
-                  <div class="payment-body">
-                    <div class="form-group">
-                      <label for="metodoPago">Tipo de pago</label>
-                      <select id="metodoPago" class="form-select payment-input" [(ngModel)]="metodoPago">
-                        <option value="credito">Credito</option>
-                        <option value="debito">Debito</option>
-                      </select>
-                    </div>
-
-                    <div class="form-group">
-                      <label for="numeroTarjeta">Numero de tarjeta</label>
-                      <input id="numeroTarjeta" class="form-control payment-input" type="text" [(ngModel)]="numeroTarjeta" placeholder="" />
-                    </div>
-
-                    <div class="row g-2">
-                      <div class="col-4">
-                        <div class="form-group">
-                          <label for="mesVencimiento">Mes</label>
-                          <input id="mesVencimiento" class="form-control payment-input" type="number" [(ngModel)]="mesVencimiento" placeholder="" />
-                        </div>
-                      </div>
-
-                      <div class="col-4">
-                        <div class="form-group">
-                          <label for="anioVencimiento">Año</label>
-                          <input id="anioVencimiento" class="form-control payment-input" type="number" [(ngModel)]="anioVencimiento" placeholder="" />
-                        </div>
-                      </div>
-
-                      <div class="col-4">
-                        <div class="form-group">
-                          <label for="cvv">CVV</label>
-                          <input id="cvv" class="form-control payment-input" type="text" [(ngModel)]="cvv" placeholder="" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label for="nombreTitular">Nombre del titular</label>
-                      <input id="nombreTitular" class="form-control payment-input" type="text" [(ngModel)]="nombreTitular" placeholder="" />
-                    </div>
-
-                    <div class="form-group">
-                      <label for="email">Correo electronico</label>
-                      <input id="email" class="form-control payment-input" type="email" [(ngModel)]="email" placeholder="" />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
               <div class="cart-total">
                 <span>Total a pagar</span>
-                <strong>${{ total }}</strong>
+                <strong>${{ total | number }}</strong>
               </div>
 
-              <button class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow-sm" (click)="pagar()">
-                Pagar ahora
-              </button>
+              @if (!mostrarFormPago) {
+                <button class="btn-checkout w-100" (click)="mostrarFormPago = true">
+                  Proceder al pago
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+              } @else {
+                <section class="payment-section">
+                  <div class="payment-card">
+                    <div class="payment-header">
+                      <div>
+                        <span class="payment-kicker">Pago seguro</span>
+                        <h3>Datos de pago</h3>
+                      </div>
+                      <button class="btn-back-cart" (click)="mostrarFormPago = false">← Volver</button>
+                    </div>
+
+                    <div class="payment-body">
+                      <div class="form-group">
+                        <label>Tipo de pago</label>
+                        <select class="form-select payment-input" [(ngModel)]="metodoPago">
+                          <option value="credito">Crédito</option>
+                          <option value="debito">Débito</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Número de tarjeta</label>
+                        <input class="form-control payment-input" type="text" [(ngModel)]="numeroTarjeta" placeholder="1234 5678 9012 3456" />
+                      </div>
+
+                      <div class="row g-2">
+                        <div class="col-4">
+                          <div class="form-group">
+                            <label>Mes</label>
+                            <input class="form-control payment-input" type="number" [(ngModel)]="mesVencimiento" placeholder="11" />
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <div class="form-group">
+                            <label>Año</label>
+                            <input class="form-control payment-input" type="number" [(ngModel)]="anioVencimiento" placeholder="2030" />
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <div class="form-group">
+                            <label>CVV</label>
+                            <input class="form-control payment-input" type="text" [(ngModel)]="cvv" placeholder="123" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Titular</label>
+                        <input class="form-control payment-input" type="text" [(ngModel)]="nombreTitular" placeholder="JUAN PÉREZ" />
+                      </div>
+
+                      <div class="form-group">
+                        <label>Correo electrónico</label>
+                        <input class="form-control payment-input" type="email" [(ngModel)]="email" placeholder="correo@ejemplo.com" />
+                      </div>
+
+                      <button class="btn-checkout w-100 mt-1" (click)="pagar()">
+                        Confirmar pago
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              }
             }
 
             @if (mensajePago) {
-              <div class="alert alert-info mt-4 mb-0 rounded-4">{{ mensajePago }}</div>
+              <div class="pay-alert" [class.pay-alert--error]="mensajePago.includes('rechazado') || mensajePago.includes('expirado') || mensajePago.includes('cancelado')">
+                {{ mensajePago }}
+              </div>
             }
           </div>
         </div>
       </aside>
+
     </div>
   </main>
+
+  <!-- ── COMPROBANTE ──────────────────────────────────────────── -->
+  @if (mostrarComprobante && comprobante) {
+    <div class="comprobante-overlay">
+      <div class="comprobante-card">
+        <div class="comprobante-icon-wrap">
+          <div class="comprobante-icon">&#10003;</div>
+        </div>
+
+        <h2 class="comprobante-titulo">¡Pago Exitoso!</h2>
+        <p class="comprobante-subtitulo">Tu compra ha sido procesada correctamente.</p>
+
+        <div class="comprobante-divider"></div>
+
+        <div class="comprobante-details">
+          <div class="comprobante-row">
+            <span>N° Operación</span>
+            <strong>#{{ comprobante.numero }}</strong>
+          </div>
+          @if (comprobante.referencia) {
+            <div class="comprobante-row">
+              <span>Referencia</span>
+              <strong class="comprobante-ref">{{ comprobante.referencia }}</strong>
+            </div>
+          }
+          <div class="comprobante-row">
+            <span>Fecha</span>
+            <strong>{{ comprobante.fecha | date:'dd/MM/yyyy HH:mm' }}</strong>
+          </div>
+          <div class="comprobante-row">
+            <span>Titular</span>
+            <strong>{{ comprobante.titular }}</strong>
+          </div>
+          <div class="comprobante-row">
+            <span>Email</span>
+            <strong>{{ comprobante.email }}</strong>
+          </div>
+          <div class="comprobante-row">
+            <span>Método de pago</span>
+            <strong>{{ comprobante.metodoPago | titlecase }}</strong>
+          </div>
+        </div>
+
+        <div class="comprobante-divider"></div>
+
+        <div class="comprobante-items">
+          <h5 class="comprobante-items-titulo">Productos comprados</h5>
+          @for (item of comprobante.items; track item.id) {
+            <div class="comprobante-item-row">
+              <span>{{ item.producto.nombre }} <em>× {{ item.cantidad }}</em></span>
+              <span>${{ item.subtotal | number }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="comprobante-total-row">
+          <span>Total pagado</span>
+          <strong>${{ comprobante.monto | number }}</strong>
+        </div>
+
+        <div class="comprobante-actions">
+          <button class="comprobante-btn-outline" (click)="imprimirComprobante()">Imprimir</button>
+          <button class="comprobante-btn-primary" (click)="cerrarComprobante()">Continuar comprando</button>
+        </div>
+      </div>
+    </div>
+  }
 </div>
