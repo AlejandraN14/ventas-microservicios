@@ -58,7 +58,20 @@
               </button>
             </div>
 
-            @if (!usuario) {
+            @if (esperandoVerificacion) {
+              <div class="auth-field">
+                <label>Código de verificación</label>
+                <p style="color:#94A3B8;font-size:13px;margin:4px 0 12px">{{ mensajeVerificacion }}</p>
+                <div class="input-icon-wrap">
+                  <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  <input class="auth-input" type="text" [(ngModel)]="codigoVerificacion" placeholder="123456" maxlength="6" />
+                </div>
+              </div>
+              <button class="btn-auth" (click)="verificarCuenta()">
+                Verificar cuenta
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            } @else if (!usuario) {
               @if (modoAuth === 'registro') {
                 <div class="auth-field">
                   <label for="nombreRegistro">Nombre completo</label>
@@ -89,7 +102,7 @@
                 {{ modoAuth === 'login' ? 'Iniciar sesión' : 'Crear cuenta' }}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </button>
-            } @else {
+            } @else if (usuario) {
               <div class="auth-active">
                 <div class="auth-active-icon">✓</div>
                 <div>

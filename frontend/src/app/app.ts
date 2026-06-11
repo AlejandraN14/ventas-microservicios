@@ -38,6 +38,11 @@ export class App implements OnInit {
   comprobante: any = null;
   mostrarFormPago: boolean = false;
 
+  esperandoVerificacion: boolean = false;
+  emailPendienteVerificacion: string = '';
+  codigoVerificacion: string = '';
+  mensajeVerificacion: string = '';
+
 
 
   constructor(
@@ -65,17 +70,39 @@ export class App implements OnInit {
       : this.usuariosService.login(this.emailAuth, this.passwordAuth);
 
     solicitud.subscribe({
-      next: (usuario) => {
-        this.usuario = usuario;
-        this.mensajeSesion = this.modoAuth === 'registro'
-          ? 'Usuario registrado correctamente'
-          : 'Sesion iniciada correctamente';
-        this.passwordAuth = '';
-        this.cargarCarrito();
+      next: (respuesta) => {
+        if (this.modoAuth === 'registro') {
+          this.esperandoVerificacion = true;
+          this.emailPendienteVerificacion = this.emailAuth;
+          this.mensajeSesion = '';
+          this.mensajeVerificacion = 'Revisa tu correo e ingresa el código de 6 dígitos.';
+        } else {
+          this.usuario = respuesta;
+          this.mensajeSesion = 'Sesion iniciada correctamente';
+          this.passwordAuth = '';
+          this.cargarCarrito();
+        }
         this.cdr.detectChanges();
       },
       error: (error) => {
         this.mensajeSesion = error?.error?.detail || 'No fue posible autenticar el usuario';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  verificarCuenta(): void {
+    if (!this.codigoVerificacion) return;
+    this.usuariosService.verificar(this.emailPendienteVerificacion, this.codigoVerificacion).subscribe({
+      next: () => {
+        this.esperandoVerificacion = false;
+        this.mensajeSesion = 'Cuenta verificada. Ahora puedes iniciar sesion.';
+        this.modoAuth = 'login';
+        this.codigoVerificacion = '';
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.mensajeVerificacion = error?.error?.detail || 'Codigo incorrecto';
         this.cdr.detectChanges();
       }
     });

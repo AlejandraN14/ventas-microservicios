@@ -16,4 +16,8 @@ export class UsuariosService {
   login(email: string, password: string): Observable<any> {
     return this.http.post(`${getApiBaseUrl()}/usuarios/login`, { email, password });
   }
+
+  verificar(email: string, codigo: string): Observable<any> {
+    return this.http.post(`${getApiBaseUrl()}/usuarios/verificar`, { email, codigo });
+  }
 }
