@@ -1,4 +1,4 @@
-name: Deploy Notification Service to EC2
+name: Deploy Notification Service
 
 on:
   push:
@@ -8,52 +8,49 @@ on:
       - 'notification-service/**'
   workflow_dispatch:
 
+env:
+  ECR_REGISTRY: 642528007536.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: notification-service
+
 jobs:
   deploy:
-    name: Deploy to EC2
+    name: Build, Push ECR y Deploy EC2
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar clave SSH
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login a Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y push imagen a ECR
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./notification-service
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      - name: Copiar archivos al servidor EC2
+      - name: Deploy en EC2
         run: |
-          scp -i ~/.ssh/deploy_key -r notification-service/ \
-            ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/
-
-      - name: Construir y levantar el servicio
-        run: |
-          ssh -i ~/.ssh/deploy_key ec2-user@${{ secrets.EC2_HOST }} << 'ENDSSH'
-            cd /home/ec2-user/notification-service
-
-            cat > .env <<EOF
-            AWS_REGION=us-east-1
-            AWS_ACCESS_KEY_ID=${{ secrets.NS_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.NS_AWS_SECRET_ACCESS_KEY }}
-            SES_SENDER_EMAIL=${{ secrets.NS_SES_SENDER_EMAIL }}
-            TWILIO_ACCOUNT_SID=${{ secrets.NS_TWILIO_ACCOUNT_SID }}
-            TWILIO_AUTH_TOKEN=${{ secrets.NS_TWILIO_AUTH_TOKEN }}
-            TWILIO_WHATSAPP_FROM=${{ secrets.NS_TWILIO_WHATSAPP_FROM }}
-            EOF
-
+          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d | tr -d '\r' > /tmp/key.pem
+          chmod 600 /tmp/key.pem
+          ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ec2-user@${{ secrets.EC2_HOST }} << ENDSSH
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest
             docker stop notification-service 2>/dev/null || true
             docker rm notification-service 2>/dev/null || true
-            docker build -t notification-service:latest .
             docker run -d \
               --name notification-service \
               --restart always \
               -p 8003:8003 \
-              --env-file .env \
-              notification-service:latest
-
-            echo "Servicio desplegado:"
+              --env-file /home/ec2-user/notification-service/.env \
+              $ECR_REGISTRY/$ECR_REPOSITORY:latest
+            echo "--- Contenedor activo ---"
             docker ps | grep notification-service
           ENDSSH
