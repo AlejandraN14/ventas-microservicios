@@ -1,5 +1,6 @@
 import hashlib
 import os
+import random
 import secrets
 
 from fastapi import FastAPI, HTTPException
@@ -9,7 +10,7 @@ import requests
 from database import engine, SessionLocal, Base
 from models.carrito import CarritoItem
 from models.producto import Producto
-from models.usuario import Usuario
+from models.usuario import Usuario, CodigoVerificacion
 from models.venta import Venta
 
 app = FastAPI()
@@ -87,7 +88,6 @@ seed_productos()
 
 @app.post("/usuarios/registro")
 def registrar_usuario(data: dict):
-    # Normaliza los datos recibidos antes de validarlos y guardarlos.
     nombre = str(data.get("nombre", "")).strip()
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
@@ -105,18 +105,58 @@ def registrar_usuario(data: dict):
         if usuario_existente:
             raise HTTPException(status_code=409, detail="El correo ya esta registrado")
 
-        usuario = Usuario(nombre=nombre, email=email, password_hash=hash_password(password))
+        usuario = Usuario(nombre=nombre, email=email, password_hash=hash_password(password), verificado=False)
         db.add(usuario)
+
+        codigo = str(random.randint(100000, 999999))
+        db.query(CodigoVerificacion).filter(CodigoVerificacion.email == email).delete()
+        db.add(CodigoVerificacion(email=email, codigo=codigo))
         db.commit()
         db.refresh(usuario)
-        return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email}
+
+        if NOTIFICATION_SERVICE_URL:
+            try:
+                requests.post(f"{NOTIFICATION_SERVICE_URL}/enviar-codigo-verificacion", json={
+                    "email": email,
+                    "nombre": nombre,
+                    "codigo": codigo,
+                }, timeout=8)
+            except Exception:
+                pass
+
+        return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email, "verificado": False}
+    finally:
+        db.close()
+
+
+@app.post("/usuarios/verificar")
+def verificar_cuenta(data: dict):
+    email = str(data.get("email", "")).strip().lower()
+    codigo = str(data.get("codigo", "")).strip()
+
+    db = SessionLocal()
+    try:
+        registro = db.query(CodigoVerificacion).filter(
+            CodigoVerificacion.email == email,
+            CodigoVerificacion.codigo == codigo,
+        ).first()
+        if not registro:
+            raise HTTPException(status_code=400, detail="Codigo de verificacion incorrecto")
+
+        usuario = db.query(Usuario).filter(Usuario.email == email).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        usuario.verificado = True
+        db.delete(registro)
+        db.commit()
+        return {"mensaje": "Cuenta verificada correctamente"}
     finally:
         db.close()
 
 
 @app.post("/usuarios/login")
 def iniciar_sesion(data: dict):
-    # El login devuelve los datos publicos del usuario si la clave es correcta.
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
 
@@ -125,6 +165,8 @@ def iniciar_sesion(data: dict):
         usuario = db.query(Usuario).filter(Usuario.email == email).first()
         if not usuario or not verify_password(password, usuario.password_hash):
             raise HTTPException(status_code=401, detail="Credenciales invalidas")
+        if not usuario.verificado:
+            raise HTTPException(status_code=403, detail="Debes verificar tu cuenta antes de iniciar sesion")
 
         return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email}
     finally:

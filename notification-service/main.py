@@ -193,6 +193,45 @@ def notificar_compra(data: NotificacionCompra):
     }
 
 
+class CodigoVerificacionRequest(BaseModel):
+    email: str
+    nombre: str
+    codigo: str
+
+
+@app.post("/enviar-codigo-verificacion")
+def enviar_codigo_verificacion(data: CodigoVerificacionRequest):
+    if not SES_SENDER:
+        raise HTTPException(status_code=500, detail="SES_SENDER_EMAIL no configurado")
+    try:
+        ses = _ses_client()
+        html = f"""
+        <div style="font-family:Inter,Arial,sans-serif;max-width:500px;margin:0 auto;background:#0F172A;color:#E2E8F0;border-radius:12px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);padding:32px;text-align:center">
+            <div style="font-size:48px">✉️</div>
+            <h1 style="color:#fff;margin:12px 0 4px;font-size:22px">Verifica tu cuenta</h1>
+            <p style="color:rgba(255,255,255,0.8);margin:0">TiendaOnline</p>
+          </div>
+          <div style="padding:32px;text-align:center">
+            <p>Hola <strong>{data.nombre}</strong>, usa este código para activar tu cuenta:</p>
+            <div style="background:#1E293B;border-radius:12px;padding:24px;margin:24px 0;letter-spacing:8px;font-size:36px;font-weight:bold;color:#3B82F6">{data.codigo}</div>
+            <p style="color:#64748B;font-size:13px">Este código es de un solo uso. Si no solicitaste esto, ignora este mensaje.</p>
+          </div>
+        </div>
+        """
+        ses.send_email(
+            Source=SES_SENDER,
+            Destination={"ToAddresses": [data.email]},
+            Message={
+                "Subject": {"Data": "🔐 Código de verificación - TiendaOnline"},
+                "Body": {"Html": {"Data": html}, "Text": {"Data": f"Tu código de verificación es: {data.codigo}"}},
+            },
+        )
+        return {"ok": True}
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail=e.response["Error"]["Message"])
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "servicio": "notification-service"}
