@@ -1,0 +1,66 @@
+name: Deploy Notification Service to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'notification-service/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar archivos al servidor EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "notification-service/"
+          target: "/home/ec2-user/notification-service"
+          strip_components: 1
+
+      - name: Construir y levantar el servicio
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/notification-service
+
+            # Crear archivo .env con las variables de entorno
+            cat > .env <<EOF
+            AWS_REGION=us-east-1
+            AWS_ACCESS_KEY_ID=${{ secrets.NS_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.NS_AWS_SECRET_ACCESS_KEY }}
+            SES_SENDER_EMAIL=${{ secrets.NS_SES_SENDER_EMAIL }}
+            TWILIO_ACCOUNT_SID=${{ secrets.NS_TWILIO_ACCOUNT_SID }}
+            TWILIO_AUTH_TOKEN=${{ secrets.NS_TWILIO_AUTH_TOKEN }}
+            TWILIO_WHATSAPP_FROM=${{ secrets.NS_TWILIO_WHATSAPP_FROM }}
+            EOF
+
+            # Detener y eliminar contenedor anterior si existe
+            docker stop notification-service 2>/dev/null || true
+            docker rm notification-service 2>/dev/null || true
+
+            # Construir nueva imagen
+            docker build -t notification-service:latest .
+
+            # Levantar contenedor con variables de entorno
+            docker run -d \
+              --name notification-service \
+              --restart always \
+              -p 8003:8003 \
+              --env-file .env \
+              notification-service:latest
+
+            echo "Notification service desplegado correctamente"
+            docker ps | grep notification-service

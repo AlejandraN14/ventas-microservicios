@@ -6,10 +6,11 @@ services:
       - "8001:8001"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ventasdb
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-}
     depends_on:
       - app-pagos
       - postgres
-    restart: always 
+    restart: always
 
   app-pagos:
     build: ./app-pagos

@@ -19,7 +19,8 @@ export class PagosService {
     anioVencimiento: number,
     cvv: string,
     nombreTitular: string,
-    email: string
+    email: string,
+    itemsCarrito: any[] = []
   ): Observable<any> {
     return this.http.post(`${getApiBaseUrl()}/procesar-pagos`, {
       usuario_id: usuarioId,
@@ -30,7 +31,8 @@ export class PagosService {
       anio_vencimiento: anioVencimiento,
       cvv: cvv,
       nombre_titular: nombreTitular,
-      email: email
-      });
+      email: email,
+      items_carrito: itemsCarrito,
+    });
   }
 }

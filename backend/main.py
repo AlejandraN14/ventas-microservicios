@@ -19,6 +19,7 @@ Base.metadata.create_all(bind=engine)
 
 # URL del microservicio de pagos; se puede cambiar desde variables de entorno.
 PAGOS_SERVICE_URL = os.getenv("PAGOS_SERVICE_URL", "http://app-pagos:8002")
+NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "")
 
 app.add_middleware(
     CORSMiddleware,
@@ -298,6 +299,28 @@ def procesar_pagos(data: dict):
             # Despues de un pago exitoso se limpia el carrito del usuario.
             db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
             db.commit()
+
+        # Enviar notificacion si el pago fue aprobado.
+        estado_pago = resultado.get("data", {}).get("estado", "")
+        if estado_pago == "PAGADO" and NOTIFICATION_SERVICE_URL:
+            try:
+                items_carrito = data.get("items_carrito", [])
+                notif_payload = {
+                    "email_destino": data.get("email", ""),
+                    "nombre_cliente": data.get("nombre_titular", "Cliente"),
+                    "numero_operacion": str(resultado.get("data", {}).get("id_pago", "")),
+                    "monto_total": data.get("monto", 0),
+                    "metodo_pago": data.get("metodo_pago", "debito"),
+                    "items": items_carrito,
+                    "whatsapp_destino": data.get("whatsapp", None),
+                }
+                requests.post(
+                    f"{NOTIFICATION_SERVICE_URL}/notificar-compra",
+                    json=notif_payload,
+                    timeout=8,
+                )
+            except Exception:
+                pass  # La notificacion falla silenciosamente para no bloquear el pago.
 
         return resultado
 

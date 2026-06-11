@@ -237,6 +237,12 @@ export class App implements OnInit {
   this.mensajePago = 'Procesando pago...';
   this.cdr.detectChanges();
 
+  const itemsParaNotificar = this.carrito.map(item => ({
+    nombre: item.producto.nombre,
+    cantidad: item.cantidad,
+    subtotal: item.subtotal,
+  }));
+
   this.pagosService.procesarPago(
     this.usuario.id,
     this.total,
@@ -246,7 +252,8 @@ export class App implements OnInit {
     this.anioVencimiento,
     this.cvv,
     this.nombreTitular,
-    this.email
+    this.email,
+    itemsParaNotificar
   ).subscribe({
     next: (respuesta) => {
       console.log('Respuesta del pago:', respuesta);
