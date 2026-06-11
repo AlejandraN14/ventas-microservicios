@@ -193,6 +193,34 @@ def notificar_compra(data: NotificacionCompra):
     }
 
 
+class NotificacionArchivo(BaseModel):
+    whatsapp_destino: str
+    nombre_archivo: str
+    fecha_carga: str
+    espacio_usado_mb: float
+    espacio_disponible_mb: float
+
+
+@app.post("/notificar-archivo")
+def notificar_archivo(data: NotificacionArchivo):
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+        raise HTTPException(status_code=500, detail="Credenciales Twilio no configuradas")
+    try:
+        destino = data.whatsapp_destino if data.whatsapp_destino.startswith("whatsapp:") else f"whatsapp:{data.whatsapp_destino}"
+        mensaje = (
+            f"📁 *Archivo subido exitosamente*\n\n"
+            f"📄 *Archivo:* {data.nombre_archivo}\n"
+            f"📅 *Fecha:* {data.fecha_carga[:19].replace('T', ' ')}\n"
+            f"💾 *Espacio usado:* {data.espacio_usado_mb} MB\n"
+            f"✅ *Espacio disponible:* {data.espacio_disponible_mb} MB"
+        )
+        cliente = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        cliente.messages.create(from_=TWILIO_WHATSAPP_FROM, to=destino, body=mensaje)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class CodigoVerificacionRequest(BaseModel):
     email: str
     nombre: str

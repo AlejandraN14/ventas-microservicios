@@ -307,6 +307,74 @@
     </div>
   </main>
 
+  <!-- ── ARCHIVOS S3 ─────────────────────────────────────────── -->
+  @if (usuario) {
+    <section class="container store-content" id="archivos">
+      <div class="section-heading">
+        <span class="section-kicker">Almacenamiento</span>
+        <h2>Mis archivos</h2>
+        <p>Gestiona tus archivos en la nube (límite 2 GB).</p>
+      </div>
+
+      <div class="files-card">
+
+        @if (espacio) {
+          <div class="espacio-bar-wrap">
+            <div class="espacio-labels">
+              <span>Usado: <strong>{{ espacio.usado_mb }} MB</strong></span>
+              <span>Disponible: <strong>{{ espacio.disponible_mb }} MB</strong></span>
+            </div>
+            <div class="espacio-bar">
+              <div class="espacio-bar-fill" [style.width]="espacio.porcentaje_usado + '%'"></div>
+            </div>
+            <small>{{ espacio.porcentaje_usado }}% de {{ espacio.limite_mb }} MB usado</small>
+          </div>
+        }
+
+        <div class="files-upload-row">
+          <div class="auth-field" style="flex:1;margin:0">
+            <label>WhatsApp para notificación (opcional)</label>
+            <div class="input-icon-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.22 1.22 2 2 0 012.22 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.08-1.08a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+              <input class="auth-input" type="text" [(ngModel)]="whatsappArchivo" placeholder="+56912345678" />
+            </div>
+          </div>
+          <label class="btn-checkout" style="cursor:pointer;margin-top:22px">
+            @if (subiendoArchivo) { Subiendo... } @else { Subir archivo }
+            <input type="file" style="display:none" (change)="onSeleccionarArchivo($event)" [disabled]="subiendoArchivo" />
+          </label>
+          <button class="btn-cta-secondary" style="margin-top:22px" (click)="cargarArchivos()">Actualizar</button>
+        </div>
+
+        @if (mensajeArchivo) {
+          <div class="auth-alert" style="margin-top:8px">{{ mensajeArchivo }}</div>
+        }
+
+        @if (archivos.length === 0) {
+          <div class="cart-empty" style="margin-top:16px">
+            <div class="cart-empty-icon">📂</div>
+            <h5>Sin archivos</h5>
+            <p>Sube tu primer archivo usando el botón de arriba.</p>
+          </div>
+        } @else {
+          <div class="files-list">
+            @for (archivo of archivos; track archivo.nombre) {
+              <div class="file-item">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                  <strong>{{ archivo.nombre }}</strong>
+                  <span>{{ archivo.tamano_kb }} KB · {{ archivo.fecha_modificacion | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <button class="btn-ghost-danger" (click)="eliminarArchivo(archivo.nombre)" title="Eliminar">✕</button>
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+    </section>
+  }
+
   <!-- ── COMPROBANTE ──────────────────────────────────────────── -->
   @if (mostrarComprobante && comprobante) {
     <div class="comprobante-overlay">

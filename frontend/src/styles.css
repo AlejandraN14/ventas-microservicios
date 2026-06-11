@@ -1097,6 +1097,80 @@ html, body {
   .store-content { padding-top: 2.5rem; }
 }
 
+/* ── Archivos S3 ─────────────────────────────────────────────── */
+.files-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-xl);
+  padding: 1.75rem;
+}
+
+.espacio-bar-wrap { margin-bottom: 1.5rem; }
+
+.espacio-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  margin-bottom: 0.5rem;
+}
+
+.espacio-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+}
+
+.espacio-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--violet));
+  border-radius: 99px;
+  transition: width 0.4s;
+}
+
+.files-upload-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.files-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 0.65rem 0.85rem;
+}
+
+.file-icon { font-size: 1.25rem; flex-shrink: 0; }
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-info strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-info span {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
 @media (max-width: 576px) {
   .hero-title { letter-spacing: -1.5px; }
   .hero-actions { flex-direction: column; }

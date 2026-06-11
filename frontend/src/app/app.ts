@@ -5,6 +5,7 @@ import { ProductosService } from './services/productos';
 import { PagosService } from './services/pagos';
 import { UsuariosService } from './services/usuarios';
 import { CarritoService } from './services/carrito';
+import { ArchivosService } from './services/archivos';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +44,12 @@ export class App implements OnInit {
   codigoVerificacion: string = '';
   mensajeVerificacion: string = '';
 
+  archivos: any[] = [];
+  espacio: any = null;
+  whatsappArchivo: string = '';
+  mensajeArchivo: string = '';
+  subiendoArchivo: boolean = false;
+
 
 
   constructor(
@@ -50,6 +57,7 @@ export class App implements OnInit {
     private pagosService: PagosService,
     private usuariosService: UsuariosService,
     private carritoService: CarritoService,
+    private archivosService: ArchivosService,
     private cdr: ChangeDetectorRef
   ) {}
   
@@ -81,6 +89,7 @@ export class App implements OnInit {
           this.mensajeSesion = 'Sesion iniciada correctamente';
           this.passwordAuth = '';
           this.cargarCarrito();
+          this.cargarArchivos();
         }
         this.cdr.detectChanges();
       },
@@ -105,6 +114,49 @@ export class App implements OnInit {
         this.mensajeVerificacion = error?.error?.detail || 'Codigo incorrecto';
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  cargarArchivos(): void {
+    if (!this.usuario?.id) return;
+    this.archivosService.listarArchivos(this.usuario.id).subscribe(data => {
+      this.archivos = data;
+      this.cdr.detectChanges();
+    });
+    this.archivosService.consultarEspacio(this.usuario.id).subscribe(data => {
+      this.espacio = data;
+      this.cdr.detectChanges();
+    });
+  }
+
+  onSeleccionarArchivo(event: any): void {
+    const archivo: File = event.target.files[0];
+    if (!archivo || !this.usuario?.id) return;
+
+    this.subiendoArchivo = true;
+    this.mensajeArchivo = 'Subiendo archivo...';
+    this.cdr.detectChanges();
+
+    this.archivosService.subirArchivo(this.usuario.id, archivo, this.whatsappArchivo || undefined).subscribe({
+      next: () => {
+        this.mensajeArchivo = `✓ ${archivo.name} subido correctamente`;
+        this.subiendoArchivo = false;
+        this.cargarArchivos();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.mensajeArchivo = err?.error?.detail || 'Error al subir el archivo';
+        this.subiendoArchivo = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  eliminarArchivo(nombre: string): void {
+    if (!this.usuario?.id) return;
+    this.archivosService.eliminarArchivo(this.usuario.id, nombre).subscribe(() => {
+      this.cargarArchivos();
+      this.cdr.detectChanges();
     });
   }
 
