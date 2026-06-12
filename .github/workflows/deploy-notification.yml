@@ -38,7 +38,7 @@ jobs:
 
       - name: Deploy en EC2
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" | base64 -d | tr -d '\r' > /tmp/key.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > /tmp/key.pem
           chmod 600 /tmp/key.pem
           ssh -o StrictHostKeyChecking=no -i /tmp/key.pem ec2-user@${{ secrets.EC2_HOST }} << ENDSSH
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
