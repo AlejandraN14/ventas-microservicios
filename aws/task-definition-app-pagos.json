@@ -1,31 +1,32 @@
 {
-  "family": "ventas-app-pagos-task",
+  "family": "ventas-app-pagos",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::570934198047:role/ecsTaskExecutionRole",
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "app-pagos",
-      "image": "570934198047.dkr.ecr.us-east-2.amazonaws.com/ventas-app-pagos:latest",
-      "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 8002,
-          "protocol": "tcp"
-        }
+      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-app-pagos:latest",
+      "portMappings": [{"containerPort": 8002, "protocol": "tcp"}],
+      "environment": [
+        {"name": "MP_ACCESS_TOKEN", "value": "TEST-814075209976331-051201-facbe38060521cadf0860a4aa5cf35d2-459454378"},
+        {"name": "MP_PUBLIC_KEY", "value": "TEST-814a0f21-a76f-435a-ad54-a6c99077e663"},
+        {"name": "MP_SUCCESS_URL", "value": "http://localhost:4200"},
+        {"name": "MP_FAILURE_URL", "value": "http://localhost:4200"},
+        {"name": "MP_PENDING_URL", "value": "http://localhost:4200"}
       ],
-      "secrets": [
-        {
-          "name": "MP_ACCESS_TOKEN",
-          "valueFrom": "arn:aws:ssm:us-east-2:570934198047:parameter/ventas/MP_ACCESS_TOKEN"
-        },
-        {
-          "name": "MP_PUBLIC_KEY",
-          "valueFrom": "arn:aws:ssm:us-east-2:570934198047:parameter/ventas/MP_PUBLIC_KEY"
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ventas-app-pagos",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
         }
-      ]
+      }
     }
   ]
 }

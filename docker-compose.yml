@@ -5,7 +5,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/ventasdb
+      DATABASE_URL: postgresql://postgres:postgres123@ventasdb.conowcgkyqp9.us-east-1.rds.amazonaws.com:5432/ventasdb
       NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-}
     depends_on:
       - app-pagos

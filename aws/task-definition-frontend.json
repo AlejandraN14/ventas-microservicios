@@ -1,21 +1,25 @@
 {
-  "family": "ventas-frontend-task",
+  "family": "ventas-frontend",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::570934198047:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "frontend",
-      "image": "570934198047.dkr.ecr.us-east-2.amazonaws.com/ventas-frontend:latest",
+      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-frontend:latest",
+      "portMappings": [{"containerPort": 80, "protocol": "tcp"}],
       "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 80,
-          "protocol": "tcp"
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ventas-frontend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
         }
-      ]
+      }
     }
   ]
 }

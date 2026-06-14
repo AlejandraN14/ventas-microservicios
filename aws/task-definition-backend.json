@@ -1,31 +1,29 @@
 {
-  "family": "ventas-backend-task",
+  "family": "ventas-backend",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "512",
-  "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::570934198047:role/ecsTaskExecutionRole",
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "570934198047.dkr.ecr.us-east-2.amazonaws.com/ventas-backend:latest",
-      "essential": true,
-      "portMappings": [
-        {
-          "containerPort": 8001,
-          "protocol": "tcp"
-        }
-      ],
+      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-backend:latest",
+      "portMappings": [{"containerPort": 8001, "protocol": "tcp"}],
       "environment": [
-        {
-          "name": "DATABASE_URL",
-          "value": "postgresql://postgres:password123@ventasdb.cdgsmge4o3bp.us-east-2.rds.amazonaws.com:5432/postgres?sslmode=require"
-        },
-        {
-          "name": "PAGOS_SERVICE_URL",
-          "value": "http://18.222.61.154:8002"
+        {"name": "DATABASE_URL", "value": "postgresql://postgres:postgres123@ventasdb.conowcgkyqp9.us-east-1.rds.amazonaws.com:5432/ventasdb"},
+        {"name": "NOTIFICATION_SERVICE_URL", "value": "http://13.220.253.76:8003"}
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ventas-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
         }
-      ]
+      }
     }
   ]
 }
