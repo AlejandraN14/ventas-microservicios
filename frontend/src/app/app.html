@@ -242,42 +242,8 @@
 
                     <div class="payment-body">
                       <div class="form-group">
-                        <label>Tipo de pago</label>
-                        <select class="form-select payment-input" [(ngModel)]="metodoPago">
-                          <option value="credito">Crédito</option>
-                          <option value="debito">Débito</option>
-                        </select>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Número de tarjeta</label>
-                        <input class="form-control payment-input" type="text" [(ngModel)]="numeroTarjeta" placeholder="1234 5678 9012 3456" />
-                      </div>
-
-                      <div class="row g-2">
-                        <div class="col-4">
-                          <div class="form-group">
-                            <label>Mes</label>
-                            <input class="form-control payment-input" type="number" [(ngModel)]="mesVencimiento" placeholder="11" />
-                          </div>
-                        </div>
-                        <div class="col-4">
-                          <div class="form-group">
-                            <label>Año</label>
-                            <input class="form-control payment-input" type="number" [(ngModel)]="anioVencimiento" placeholder="2030" />
-                          </div>
-                        </div>
-                        <div class="col-4">
-                          <div class="form-group">
-                            <label>CVV</label>
-                            <input class="form-control payment-input" type="text" [(ngModel)]="cvv" placeholder="123" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="form-group">
-                        <label>Titular</label>
-                        <input class="form-control payment-input" type="text" [(ngModel)]="nombreTitular" placeholder="JUAN PÉREZ" />
+                        <label>Nombre completo</label>
+                        <input class="form-control payment-input" type="text" [(ngModel)]="nombreTitular" placeholder="Juan Pérez" />
                       </div>
 
                       <div class="form-group">
@@ -285,9 +251,9 @@
                         <input class="form-control payment-input" type="email" [(ngModel)]="email" placeholder="correo@ejemplo.com" />
                       </div>
 
-                      <button class="btn-checkout w-100 mt-1" (click)="pagar()">
-                        Confirmar pago
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <button class="btn-checkout w-100 mt-1" (click)="pagar()" style="background:linear-gradient(135deg,#009ee3 0%,#0070ba 100%)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        Pagar con MercadoPago
                       </button>
                     </div>
                   </div>

@@ -287,126 +287,88 @@ export class App implements OnInit {
   }
 
   pagar(): void {
-
-  if (!this.usuario?.id) {
-    this.mensajePago = 'Debes iniciar sesion antes de pagar';
-    this.cdr.detectChanges();
-    return;
-  }
-
-  if (this.carrito.length === 0 || this.total <= 0) {
-    this.mensajePago = 'Debes agregar productos al carrito antes de pagar';
-    this.cdr.detectChanges();
-    return;
-  }
-
-  if (
-    !this.numeroTarjeta ||
-    this.mesVencimiento === null ||
-    this.anioVencimiento === null ||
-    !this.cvv ||
-    !this.nombreTitular ||
-    !this.email
-  ) {
-    this.mensajePago = 'Debes completar todos los datos de la tarjeta';
-    this.cdr.detectChanges();
-    return;
-  }
-
-  this.mensajePago = 'Procesando pago...';
-  this.cdr.detectChanges();
-
-  const itemsParaNotificar = this.carrito.map(item => ({
-    nombre: item.producto.nombre,
-    cantidad: item.cantidad,
-    subtotal: item.subtotal,
-  }));
-
-  this.pagosService.procesarPago(
-    this.usuario.id,
-    this.total,
-    this.metodoPago,
-    this.numeroTarjeta,
-    this.mesVencimiento,
-    this.anioVencimiento,
-    this.cvv,
-    this.nombreTitular,
-    this.email,
-    itemsParaNotificar
-  ).subscribe({
-    next: (respuesta) => {
-      console.log('Respuesta del pago:', respuesta);
-
-      if (respuesta?.detail) {
-        if (Array.isArray(respuesta.detail)) {
-          this.mensajePago = respuesta.detail
-            .map((error: any) => error.msg)
-            .join(' | ');
-        } else {
-          this.mensajePago = respuesta.detail;
-        }
-
-        this.cdr.detectChanges();
-        return;
-      }
-
-      const estado = respuesta?.data?.estado;
-
-      if (estado === 'PAGADO') {
-        const itemsCompra = [...this.carrito];
-        this.comprobante = {
-          numero: respuesta?.data?.id_pago,
-          referencia: respuesta?.data?.external_reference,
-          mpPaymentId: respuesta?.data?.mp_payment_id,
-          monto: this.total,
-          metodoPago: this.metodoPago,
-          fecha: new Date(),
-          email: this.email,
-          titular: this.nombreTitular,
-          items: itemsCompra
-        };
-        this.mostrarComprobante = true;
-        this.carrito = [];
-        this.total = 0;
-        this.mensajePago = '';
-
-      } else if (estado === 'RECHAZADO') {
-        this.mensajePago = 'Pago rechazado';
-
-      } else if (estado === 'PENDIENTE') {
-        this.mensajePago = 'Pago pendiente de confirmación';
-
-      } else if (estado === 'CANCELADO') {
-        this.mensajePago = 'Pago cancelado';
-
-      } else if (estado === 'EXPIRADO') {
-        this.mensajePago = ' Pago expirado';  
-
-      } else {
-        this.mensajePago = respuesta?.message || 'Respuesta desconocida del pago';
-      }
-
+    if (!this.usuario?.id) {
+      this.mensajePago = 'Debes iniciar sesion antes de pagar';
       this.cdr.detectChanges();
-    },
-
-    error: (error) => {
-      console.error('Error al procesar pago:', error);
-
-      if (error?.error?.detail) {
-        if (Array.isArray(error.error.detail)) {
-          this.mensajePago = error.error.detail
-            .map((e: any) => e.msg)
-            .join(' | ');
-        } else {
-          this.mensajePago = error.error.detail;
-        }
-      } else {
-        this.mensajePago = 'Error al procesar el pago';
-      }
-
-      this.cdr.detectChanges();
+      return;
     }
-  });
-}
+
+    if (this.carrito.length === 0 || this.total <= 0) {
+      this.mensajePago = 'Debes agregar productos al carrito antes de pagar';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (!this.nombreTitular || !this.email) {
+      this.mensajePago = 'Debes ingresar tu nombre y correo electrónico';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.mensajePago = 'Creando orden de pago...';
+    this.cdr.detectChanges();
+
+    const itemsParaNotificar = this.carrito.map(item => ({
+      nombre: item.producto.nombre,
+      cantidad: item.cantidad,
+      subtotal: item.subtotal,
+    }));
+
+    this.pagosService.procesarPago(
+      this.usuario.id,
+      this.total,
+      'mercadopago',
+      this.nombreTitular,
+      this.email,
+      itemsParaNotificar
+    ).subscribe({
+      next: (respuesta) => {
+        console.log('Respuesta del pago:', respuesta);
+
+        const urlPago = respuesta?.data?.url_pago;
+        if (urlPago) {
+          const itemsCompra = [...this.carrito];
+          this.comprobante = {
+            numero: respuesta?.data?.id_pago,
+            referencia: respuesta?.data?.external_reference,
+            monto: this.total,
+            metodoPago: 'MercadoPago',
+            fecha: new Date(),
+            email: this.email,
+            titular: this.nombreTitular,
+            items: itemsCompra,
+          };
+          this.carrito = [];
+          this.total = 0;
+          this.mensajePago = '';
+          this.mostrarFormPago = false;
+          this.cdr.detectChanges();
+          window.open(urlPago, '_blank');
+          this.mostrarComprobante = true;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        if (respuesta?.detail) {
+          this.mensajePago = Array.isArray(respuesta.detail)
+            ? respuesta.detail.map((e: any) => e.msg).join(' | ')
+            : respuesta.detail;
+          this.cdr.detectChanges();
+          return;
+        }
+
+        this.mensajePago = respuesta?.message || 'Error desconocido';
+        this.cdr.detectChanges();
+      },
+
+      error: (error) => {
+        console.error('Error al procesar pago:', error);
+        this.mensajePago = Array.isArray(error?.error?.detail)
+          ? error.error.detail.map((e: any) => e.msg).join(' | ')
+          : (error?.error?.detail || 'Error al procesar el pago');
+        this.cdr.detectChanges();
+      }
+    });
+  }
   
 }

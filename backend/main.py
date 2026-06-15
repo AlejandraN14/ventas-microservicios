@@ -296,55 +296,44 @@ def vaciar_carrito(usuario_id: int):
 
 @app.post("/procesar-pagos")
 def procesar_pagos(data: dict):
-    # Adapta los datos del frontend al formato esperado por app-pagos.
-    payload = { 
-    "id_usuario": 1,
-    "numero_tarjeta": data["numero_tarjeta"],
-    "mes_vencimiento": data["mes_vencimiento"],
-    "anio_vencimiento": data["anio_vencimiento"],
-    "cvv": data["cvv"],
-    "nombre_titular": data["nombre_titular"],
-    "email": data["email"],
-    "descripcion": f"Compra tienda online - Pago con tarjeta de {data.get('metodo_pago', 'debito')}",
-    "monto": data["monto"]
-}
+    checkout_payload = {
+        "id_usuario": data.get("usuario_id", 1),
+        "descripcion": "Compra tienda online",
+        "monto": data["monto"],
+        "email_pagador": data.get("email", "comprador@tienda.cl"),
+    }
 
     try:
-        # Llama al microservicio de pagos dentro de la red de Docker Compose.
         response = requests.post(
-            f"{PAGOS_SERVICE_URL}/pagos/directo/procesar",
-            json=payload,
-            timeout=10
+            f"{PAGOS_SERVICE_URL}/pagos/crear",
+            json=checkout_payload,
+            timeout=15,
         )
 
-
         resultado = response.json()
+        print("RESPUESTA APP-PAGOS CHECKOUT:", resultado)
 
-        print("RESPUESTA APP-PAGOS:", resultado)
+        if not response.ok or not resultado.get("data", {}).get("url_pago"):
+            raise HTTPException(status_code=502, detail=resultado.get("detail", "Error al crear preferencia de pago"))
 
         db = SessionLocal()
 
-        # Registra la venta con el estado informado por el microservicio.
         nueva_venta = Venta(
             monto=data["monto"],
-            metodo_pago=data.get("metodo_pago", "desconocido"),
-            estado=resultado.get("data", {}).get("estado", "desconocido"),
-            mp_payment_id=str(resultado.get("data", {}).get("mp_payment_id"))
+            metodo_pago="mercadopago",
+            estado="PENDIENTE",
+            mp_payment_id=str(resultado.get("data", {}).get("preference_id", "")),
         )
-
         db.add(nueva_venta)
         db.commit()
         db.refresh(nueva_venta)
 
         usuario_id = data.get("usuario_id")
         if usuario_id:
-            # Despues de un pago exitoso se limpia el carrito del usuario.
             db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
             db.commit()
 
-        # Enviar notificacion si el pago fue aprobado.
-        estado_pago = resultado.get("data", {}).get("estado", "")
-        if estado_pago == "PAGADO" and NOTIFICATION_SERVICE_URL:
+        if NOTIFICATION_SERVICE_URL:
             try:
                 items_carrito = data.get("items_carrito", [])
                 notif_payload = {
@@ -352,7 +341,7 @@ def procesar_pagos(data: dict):
                     "nombre_cliente": data.get("nombre_titular", "Cliente"),
                     "numero_operacion": str(resultado.get("data", {}).get("id_pago", "")),
                     "monto_total": data.get("monto", 0),
-                    "metodo_pago": data.get("metodo_pago", "debito"),
+                    "metodo_pago": "mercadopago",
                     "items": items_carrito,
                     "whatsapp_destino": data.get("whatsapp", None),
                 }
@@ -362,21 +351,16 @@ def procesar_pagos(data: dict):
                     timeout=8,
                 )
             except Exception:
-                pass  # La notificacion falla silenciosamente para no bloquear el pago.
+                pass
 
         return resultado
 
+    except HTTPException:
+        raise
     except requests.exceptions.ConnectionError:
-        raise HTTPException(
-            status_code=500,
-            detail="No se pudo conectar con el microservicio app-pagos. Revisa que esté corriendo en el puerto 8002."
-        )
-
+        raise HTTPException(status_code=500, detail="No se pudo conectar con el microservicio app-pagos.")
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error procesando el pago: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error procesando el pago: {str(e)}")
     
 
 @app.get("/ventas")
