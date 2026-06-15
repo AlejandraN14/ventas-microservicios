@@ -289,35 +289,37 @@ def pago_con_token(payload: PagoConTokenRequest):
 
     try:
         is_test = MP_ACCESS_TOKEN.startswith("TEST-")
-        payer_email = "comprador_test@gmail.com" if is_test else payload.email
-
         external_reference = _generate_external_reference(payload.id_usuario)
-        sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
-        payment_payload = {
-            "token": payload.token,
-            "transaction_amount": int(float(payload.transaction_amount)),
-            "description": payload.descripcion,
-            "installments": payload.installments,
-            "payment_method_id": payload.payment_method_id,
-            "external_reference": external_reference,
-            "payer": {
-                "email": payer_email,
-                "identification": {"type": "RUT", "number": "12345678-5"},
-            },
-        }
-        if payload.issuer_id:
-            payment_payload["issuer_id"] = payload.issuer_id
 
-        logger.info("[pagos] Payment payload con-token=%s", payment_payload)
-        payment_response = sdk.payment().create(payment_payload)
-        payment_data = payment_response.get("response", {})
-
-        if payment_response.get("status") not in (200, 201):
-            logger.error("[pagos] Error MP con-token status=%s body=%s", payment_response.get("status"), payment_data)
-            raise HTTPException(status_code=502, detail=payment_data.get("message", "Error procesando pago"))
-
-        mp_payment_id = payment_data.get("id")
-        estado = _map_mp_status(payment_data.get("status", ""))
+        if is_test:
+            # Cuenta personal MP no soporta pagos de tarjeta via API en sandbox.
+            # Simulamos aprobación para demostrar el flujo completo.
+            mp_payment_id = None
+            estado = "PAGADO"
+            logger.info("[pagos] Modo TEST: pago simulado aprobado sin llamar a MP")
+        else:
+            sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
+            payment_payload = {
+                "token": payload.token,
+                "transaction_amount": int(float(payload.transaction_amount)),
+                "description": payload.descripcion,
+                "installments": payload.installments,
+                "payment_method_id": payload.payment_method_id,
+                "external_reference": external_reference,
+                "payer": {
+                    "email": payload.email,
+                    "identification": {"type": "RUT", "number": "12345678-5"},
+                },
+            }
+            if payload.issuer_id:
+                payment_payload["issuer_id"] = payload.issuer_id
+            payment_response = sdk.payment().create(payment_payload)
+            payment_data = payment_response.get("response", {})
+            if payment_response.get("status") not in (200, 201):
+                logger.error("[pagos] Error MP con-token status=%s body=%s", payment_response.get("status"), payment_data)
+                raise HTTPException(status_code=502, detail=payment_data.get("message", "Error procesando pago"))
+            mp_payment_id = payment_data.get("id")
+            estado = _map_mp_status(payment_data.get("status", ""))
 
         fake_req = PagoDirectoRequest(
             id_usuario=payload.id_usuario,
