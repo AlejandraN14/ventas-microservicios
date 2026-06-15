@@ -118,7 +118,6 @@ def crear_pago_checkout(payload: PagoCreateCheckoutRequest):
         "payer": {"email": str(payload.email_pagador)},
         "external_reference": external_reference,
         "back_urls": {"success": MP_SUCCESS_URL, "failure": MP_FAILURE_URL, "pending": MP_PENDING_URL},
-        "auto_return": "approved",
     }
     if MP_WEBHOOK_URL:
         preference_data["notification_url"] = MP_WEBHOOK_URL
