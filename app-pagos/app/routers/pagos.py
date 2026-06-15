@@ -246,7 +246,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
 
         external_reference = _generate_external_reference(payload.id_usuario)
         sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
-        payer_email = "test_buyer_123456@testuser.com" if is_test else payload.email
+        payer_email = "comprador_test@gmail.com" if is_test else payload.email
         payment_payload = {
             "token": card_token,
             "transaction_amount": int(float(payload.monto)),
@@ -289,7 +289,7 @@ def pago_con_token(payload: PagoConTokenRequest):
 
     try:
         is_test = MP_ACCESS_TOKEN.startswith("TEST-")
-        payer_email = "test_buyer_123456@testuser.com" if is_test else payload.email
+        payer_email = "comprador_test@gmail.com" if is_test else payload.email
 
         external_reference = _generate_external_reference(payload.id_usuario)
         sdk = mercadopago.SDK(MP_ACCESS_TOKEN)

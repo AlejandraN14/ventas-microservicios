@@ -350,7 +350,10 @@ export class App implements OnInit {
     bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
       initialization: {
         amount: this.total,
-        payer: { email: this.email || '' },
+        payer: {
+          email: '',
+          identification: { type: 'RUT', number: '' },
+        },
       },
       style: {
         theme: 'dark',
