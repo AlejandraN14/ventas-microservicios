@@ -113,4 +113,4 @@ jobs:
           task-definition: ${{ steps.render.outputs.task-definition }}
           service: ${{ matrix.service.ecs_service }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          wait-for-service-stability: false
