@@ -322,7 +322,7 @@ export class App implements OnInit {
     if ((window as any).MercadoPago) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+      script.src = 'https://sdk.mercadopago.com/js/v2';
       script.onload = () => resolve();
       script.onerror = () => reject();
       document.head.appendChild(script);
@@ -352,7 +352,26 @@ export class App implements OnInit {
         amount: this.total,
         payer: { email: this.email || '' },
       },
-      style: { theme: 'default' },
+      style: {
+        theme: 'dark',
+        customVariables: {
+          baseColor: '#009ee3',
+          buttonTextColor: '#ffffff',
+          borderRadiusLarge: '10px',
+          borderRadiusMedium: '8px',
+          borderRadiusSmall: '6px',
+          fontSizeSmall: '13px',
+          fontSizeMedium: '14px',
+          formBackgroundColor: '#1a2035',
+          inputBackgroundColor: '#111827',
+          inputBorderColor: '#2d3748',
+          inputFocusBorderColor: '#009ee3',
+          inputPlaceholderColor: '#6b7280',
+          inputTextColor: '#f1f5f9',
+          labelTextColor: '#94a3b8',
+          secondaryColor: '#1e293b',
+        },
+      },
       callbacks: {
         onReady: () => {
           this.cdr.detectChanges();
