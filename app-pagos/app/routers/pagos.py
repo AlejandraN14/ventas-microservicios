@@ -207,13 +207,15 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
     try:
         auth_header = {"Authorization": f"Bearer {MP_ACCESS_TOKEN}", "Content-Type": "application/json"}
 
+        is_test = MP_ACCESS_TOKEN.startswith("TEST-")
+        cardholder_name = "APRO" if is_test else payload.nombre_titular
         token_payload = {
             "card_number": payload.numero_tarjeta,
             "expiration_month": payload.mes_vencimiento,
             "expiration_year": payload.anio_vencimiento,
             "security_code": payload.cvv,
             "cardholder": {
-                "name": payload.nombre_titular,
+                "name": cardholder_name,
                 "identification": {"type": "RUT", "number": "12345678-5"},
             },
         }
@@ -244,6 +246,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
 
         external_reference = _generate_external_reference(payload.id_usuario)
         sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
+        payer_email = "test_buyer_123456@testuser.com" if is_test else payload.email
         payment_payload = {
             "token": card_token,
             "transaction_amount": int(float(payload.monto)),
@@ -251,7 +254,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
             "installments": 1,
             "payment_method_id": payment_method_id,
             "external_reference": external_reference,
-            "payer": {"email": payload.email, "identification": {"type": "RUT", "number": "12345678-5"}},
+            "payer": {"email": payer_email, "identification": {"type": "RUT", "number": "12345678-5"}},
         }
         logger.info("[pagos] Payment payload=%s", payment_payload)
         payment_response = sdk.payment().create(payment_payload)
