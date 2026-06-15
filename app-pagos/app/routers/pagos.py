@@ -114,13 +114,14 @@ def crear_pago_checkout(payload: PagoCreateCheckoutRequest):
     external_reference = _generate_external_reference(payload.id_usuario)
     sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
     preference_data = {
-        "items": [{"title": payload.descripcion, "quantity": 1, "currency_id": "CLP", "unit_price": float(payload.monto)}],
-        "payer": {"email": payload.email_pagador},
+        "items": [{"title": payload.descripcion, "quantity": 1, "currency_id": "CLP", "unit_price": int(float(payload.monto))}],
+        "payer": {"email": str(payload.email_pagador)},
         "external_reference": external_reference,
         "back_urls": {"success": MP_SUCCESS_URL, "failure": MP_FAILURE_URL, "pending": MP_PENDING_URL},
         "auto_return": "approved",
-        "notification_url": MP_WEBHOOK_URL,
     }
+    if MP_WEBHOOK_URL:
+        preference_data["notification_url"] = MP_WEBHOOK_URL
 
     preference_response = sdk.preference().create(preference_data)
     body = preference_response.get("response", {})
@@ -213,7 +214,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
             "security_code": payload.cvv,
             "cardholder": {
                 "name": payload.nombre_titular,
-                "identification": {"type": "RUT", "number": "14357293-K"},
+                "identification": {"type": "RUT", "number": "12345678-5"},
             },
         }
         token_response = requests.post(
@@ -222,6 +223,7 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
             headers={"Content-Type": "application/json"},
             timeout=20,
         )
+        logger.info("[pagos] Token response status=%s body=%s", token_response.status_code, token_response.text)
         if token_response.status_code != 201:
             logger.error("[pagos] Error tokenizando tarjeta: %s", token_response.text)
             raise HTTPException(status_code=502, detail="No fue posible tokenizar la tarjeta")
@@ -241,25 +243,21 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
             payment_method_id = "visa"
 
         external_reference = _generate_external_reference(payload.id_usuario)
+        sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
         payment_payload = {
             "token": card_token,
-            "transaction_amount": float(payload.monto),
+            "transaction_amount": int(float(payload.monto)),
             "description": payload.descripcion,
             "installments": 1,
             "payment_method_id": payment_method_id,
             "external_reference": external_reference,
-            "payer": {"email": payload.email},
+            "payer": {"email": payload.email, "identification": {"type": "RUT", "number": "12345678-5"}},
         }
-        idempotency_key = str(uuid.uuid4())
-        payment_response = requests.post(
-            "https://api.mercadopago.com/v1/payments",
-            json=payment_payload,
-            headers={**auth_header, "X-Idempotency-Key": idempotency_key},
-            timeout=20,
-        )
-        payment_data = payment_response.json()
-        if payment_response.status_code not in (200, 201):
-            logger.error("[pagos] Error MP pago directo response=%s", payment_data)
+        logger.info("[pagos] Payment payload=%s", payment_payload)
+        payment_response = sdk.payment().create(payment_payload)
+        payment_data = payment_response.get("response", {})
+        if payment_response.get("status") not in (200, 201):
+            logger.error("[pagos] Error MP status=%s body=%s", payment_response.get("status"), payment_data)
             raise HTTPException(status_code=502, detail=payment_data.get("message", "Error procesando pago"))
 
         mp_payment_id = payment_data.get("id")
