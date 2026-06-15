@@ -118,3 +118,14 @@ class PagoDirectoResponse(BaseModel):
     success: bool
     message: str
     data: Optional[dict] = None
+
+
+class PagoConTokenRequest(BaseModel):
+    id_usuario: int
+    token: str
+    payment_method_id: str
+    issuer_id: Optional[str] = None
+    transaction_amount: Decimal
+    installments: int = 1
+    email: str = "comprador@tienda.cl"
+    descripcion: str = "Compra tienda online"

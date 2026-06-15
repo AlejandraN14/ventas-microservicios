@@ -296,33 +296,51 @@ def vaciar_carrito(usuario_id: int):
 
 @app.post("/procesar-pagos")
 def procesar_pagos(data: dict):
-    checkout_payload = {
-        "id_usuario": data.get("usuario_id", 1),
-        "descripcion": "Compra tienda online",
-        "monto": data["monto"],
-        "email_pagador": data.get("email", "comprador@tienda.cl"),
-    }
-
     try:
-        response = requests.post(
-            f"{PAGOS_SERVICE_URL}/pagos/crear",
-            json=checkout_payload,
-            timeout=15,
-        )
+        # Flujo Checkout Bricks: viene token del navegador
+        if data.get("token"):
+            token_payload = {
+                "id_usuario": data.get("usuario_id", 1),
+                "token": data["token"],
+                "payment_method_id": data.get("payment_method_id", "visa"),
+                "issuer_id": data.get("issuer_id"),
+                "transaction_amount": data.get("transaction_amount", data.get("monto", 0)),
+                "installments": data.get("installments", 1),
+                "email": data.get("email", "comprador@tienda.cl"),
+                "descripcion": "Compra tienda online",
+            }
+            response = requests.post(
+                f"{PAGOS_SERVICE_URL}/pagos/con-token",
+                json=token_payload,
+                timeout=15,
+            )
+        else:
+            # Flujo Checkout Pro (redirect)
+            checkout_payload = {
+                "id_usuario": data.get("usuario_id", 1),
+                "descripcion": "Compra tienda online",
+                "monto": data["monto"],
+                "email_pagador": data.get("email", "comprador@tienda.cl"),
+            }
+            response = requests.post(
+                f"{PAGOS_SERVICE_URL}/pagos/crear",
+                json=checkout_payload,
+                timeout=15,
+            )
 
         resultado = response.json()
-        print("RESPUESTA APP-PAGOS CHECKOUT:", resultado)
+        print("RESPUESTA APP-PAGOS:", resultado)
 
-        if not response.ok or not resultado.get("data", {}).get("url_pago"):
-            raise HTTPException(status_code=502, detail=resultado.get("detail", "Error al crear preferencia de pago"))
+        if not response.ok:
+            raise HTTPException(status_code=502, detail=resultado.get("detail", "Error en el pago"))
 
         db = SessionLocal()
-
+        estado = resultado.get("data", {}).get("estado", "PENDIENTE")
         nueva_venta = Venta(
-            monto=data["monto"],
-            metodo_pago="mercadopago",
-            estado="PENDIENTE",
-            mp_payment_id=str(resultado.get("data", {}).get("preference_id", "")),
+            monto=data.get("transaction_amount", data.get("monto", 0)),
+            metodo_pago=data.get("payment_method_id", "mercadopago"),
+            estado=estado,
+            mp_payment_id=str(resultado.get("data", {}).get("mp_payment_id", resultado.get("data", {}).get("preference_id", ""))),
         )
         db.add(nueva_venta)
         db.commit()
@@ -333,23 +351,18 @@ def procesar_pagos(data: dict):
             db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
             db.commit()
 
-        if NOTIFICATION_SERVICE_URL:
+        if NOTIFICATION_SERVICE_URL and estado == "PAGADO":
             try:
-                items_carrito = data.get("items_carrito", [])
                 notif_payload = {
                     "email_destino": data.get("email", ""),
                     "nombre_cliente": data.get("nombre_titular", "Cliente"),
                     "numero_operacion": str(resultado.get("data", {}).get("id_pago", "")),
-                    "monto_total": data.get("monto", 0),
-                    "metodo_pago": "mercadopago",
-                    "items": items_carrito,
+                    "monto_total": data.get("transaction_amount", data.get("monto", 0)),
+                    "metodo_pago": data.get("payment_method_id", "mercadopago"),
+                    "items": data.get("items_carrito", []),
                     "whatsapp_destino": data.get("whatsapp", None),
                 }
-                requests.post(
-                    f"{NOTIFICATION_SERVICE_URL}/notificar-compra",
-                    json=notif_payload,
-                    timeout=8,
-                )
+                requests.post(f"{NOTIFICATION_SERVICE_URL}/notificar-compra", json=notif_payload, timeout=8)
             except Exception:
                 pass
 

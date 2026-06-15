@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.schemas.pago import (
     PagoCancelarResponse,
+    PagoConTokenRequest,
     PagoCreateCheckoutRequest,
     PagoCreateCheckoutResponse,
     PagoDirectoRequest,
@@ -276,6 +277,71 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
         raise
     except Exception as error:
         logger.exception("[pagos] Error inesperado en pago directo")
+        raise HTTPException(status_code=500, detail=str(error))
+
+
+@router.post("/con-token", response_model=PagoDirectoResponse, status_code=status.HTTP_201_CREATED)
+def pago_con_token(payload: PagoConTokenRequest):
+    if not MP_ACCESS_TOKEN:
+        raise HTTPException(status_code=500, detail="MP_ACCESS_TOKEN no configurado")
+
+    logger.info("[pagos] Pago con token id_usuario=%s monto=%s metodo=%s", payload.id_usuario, payload.transaction_amount, payload.payment_method_id)
+
+    try:
+        is_test = MP_ACCESS_TOKEN.startswith("TEST-")
+        payer_email = "test_buyer_123456@testuser.com" if is_test else payload.email
+
+        external_reference = _generate_external_reference(payload.id_usuario)
+        sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
+        payment_payload = {
+            "token": payload.token,
+            "transaction_amount": int(float(payload.transaction_amount)),
+            "description": payload.descripcion,
+            "installments": payload.installments,
+            "payment_method_id": payload.payment_method_id,
+            "external_reference": external_reference,
+            "payer": {
+                "email": payer_email,
+                "identification": {"type": "RUT", "number": "12345678-5"},
+            },
+        }
+        if payload.issuer_id:
+            payment_payload["issuer_id"] = payload.issuer_id
+
+        logger.info("[pagos] Payment payload con-token=%s", payment_payload)
+        payment_response = sdk.payment().create(payment_payload)
+        payment_data = payment_response.get("response", {})
+
+        if payment_response.get("status") not in (200, 201):
+            logger.error("[pagos] Error MP con-token status=%s body=%s", payment_response.get("status"), payment_data)
+            raise HTTPException(status_code=502, detail=payment_data.get("message", "Error procesando pago"))
+
+        mp_payment_id = payment_data.get("id")
+        estado = _map_mp_status(payment_data.get("status", ""))
+
+        fake_req = PagoDirectoRequest(
+            id_usuario=payload.id_usuario,
+            numero_tarjeta="4111111111111111",
+            mes_vencimiento=12,
+            anio_vencimiento=2030,
+            cvv="123",
+            nombre_titular="BRICK",
+            email=payload.email,
+            descripcion=payload.descripcion,
+            monto=payload.transaction_amount,
+        )
+        id_operacion = _registrar_operacion(fake_req, external_reference, mp_payment_id, estado)
+
+        logger.info("[pagos] Pago con-token id_operacion=%s mp_payment_id=%s estado=%s", id_operacion, mp_payment_id, estado)
+        return PagoDirectoResponse(
+            success=True,
+            message="Pago procesado correctamente",
+            data={"id_pago": id_operacion, "estado": estado, "mp_payment_id": mp_payment_id, "external_reference": external_reference},
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("[pagos] Error inesperado en pago con-token")
         raise HTTPException(status_code=500, detail=str(error))
 
 

@@ -6,6 +6,7 @@ import { PagosService } from './services/pagos';
 import { UsuariosService } from './services/usuarios';
 import { CarritoService } from './services/carrito';
 import { ArchivosService } from './services/archivos';
+import { getApiBaseUrl } from './services/api-config';
 
 @Component({
   selector: 'app-root',
@@ -39,6 +40,8 @@ export class App implements OnInit {
   comprobante: any = null;
   mostrarFormPago: boolean = false;
   urlPagoActual: string = '';
+  brickController: any = null;
+  readonly MP_PUBLIC_KEY = 'TEST-814a0f21-a76f-435a-ad54-a6c99077e663';
 
   esperandoVerificacion: boolean = false;
   emailPendienteVerificacion: string = '';
@@ -294,6 +297,120 @@ export class App implements OnInit {
     window.print();
   }
 
+  mostrarPago(): void {
+    if (!this.usuario?.id) {
+      this.mensajePago = 'Debes iniciar sesion antes de pagar';
+      this.cdr.detectChanges();
+      return;
+    }
+    if (this.carrito.length === 0 || this.total <= 0) {
+      this.mensajePago = 'Debes agregar productos al carrito antes de pagar';
+      this.cdr.detectChanges();
+      return;
+    }
+    this.mostrarFormPago = true;
+    this.mensajePago = '';
+    this.cdr.detectChanges();
+    setTimeout(() => this.initBrick(), 300);
+  }
+
+  actualizarEmailBrick(): void {
+    // placeholder — el Brick ya toma el email del formulario al hacer submit
+  }
+
+  initBrick(): void {
+    if (this.brickController) {
+      this.brickController.unmount();
+      this.brickController = null;
+    }
+
+    const mp = new (window as any).MercadoPago(this.MP_PUBLIC_KEY, { locale: 'es-CL' });
+    const bricksBuilder = mp.bricks();
+
+    bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', {
+      initialization: {
+        amount: this.total,
+        payer: { email: this.email || '' },
+      },
+      style: { theme: 'default' },
+      callbacks: {
+        onReady: () => {
+          this.cdr.detectChanges();
+        },
+        onSubmit: (cardFormData: any) => {
+          this.mensajePago = 'Procesando pago...';
+          this.cdr.detectChanges();
+
+          const itemsParaNotificar = this.carrito.map(item => ({
+            nombre: item.producto.nombre,
+            cantidad: item.cantidad,
+            subtotal: item.subtotal,
+          }));
+
+          const payload = {
+            usuario_id: this.usuario.id,
+            token: cardFormData.token,
+            payment_method_id: cardFormData.payment_method_id,
+            issuer_id: cardFormData.issuer_id,
+            transaction_amount: this.total,
+            installments: cardFormData.installments,
+            email: this.email || cardFormData.payer?.email || 'comprador@tienda.cl',
+            nombre_titular: this.nombreTitular || 'Cliente',
+            items_carrito: itemsParaNotificar,
+          };
+
+          return new Promise<void>((resolve, reject) => {
+            fetch(`${getApiBaseUrl()}/procesar-pagos`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+              .then(res => res.json().then(data => ({ ok: res.ok, data })))
+              .then(({ ok, data }) => {
+                if (!ok) {
+                  this.mensajePago = data?.detail || 'Error al procesar el pago';
+                  this.cdr.detectChanges();
+                  reject(data);
+                  return;
+                }
+
+                const itemsCompra = [...this.carrito];
+                this.comprobante = {
+                  numero: data?.data?.id_pago,
+                  referencia: data?.data?.external_reference,
+                  monto: this.total,
+                  metodoPago: cardFormData.payment_method_id || 'Tarjeta',
+                  fecha: new Date(),
+                  email: this.email,
+                  titular: this.nombreTitular,
+                  items: itemsCompra,
+                };
+                this.carrito = [];
+                this.total = 0;
+                this.mostrarFormPago = false;
+                this.mostrarComprobante = true;
+                this.mensajePago = '';
+                this.cdr.detectChanges();
+                resolve();
+              })
+              .catch(err => {
+                this.mensajePago = 'Error de conexión al procesar el pago';
+                this.cdr.detectChanges();
+                reject(err);
+              });
+          });
+        },
+        onError: (error: any) => {
+          console.error('[Brick] Error:', error);
+          this.mensajePago = 'Error en el formulario de pago';
+          this.cdr.detectChanges();
+        },
+      },
+    }).then((controller: any) => {
+      this.brickController = controller;
+    });
+  }
+
   pagar(): void {
     if (!this.usuario?.id) {
       this.mensajePago = 'Debes iniciar sesion antes de pagar';
@@ -377,5 +494,5 @@ export class App implements OnInit {
       }
     });
   }
-  
+
 }
