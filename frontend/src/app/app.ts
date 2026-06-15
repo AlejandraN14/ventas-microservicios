@@ -51,6 +51,7 @@ export class App implements OnInit {
   archivos: any[] = [];
   espacio: any = null;
   whatsappArchivo: string = '';
+  whatsappPago: string = '';
   mensajeArchivo: string = '';
   subiendoArchivo: boolean = false;
 
@@ -399,6 +400,7 @@ export class App implements OnInit {
             email: this.email || cardFormData.payer?.email || 'comprador@tienda.cl',
             nombre_titular: this.nombreTitular || 'Cliente',
             items_carrito: itemsParaNotificar,
+            whatsapp: this.whatsappPago || null,
           };
 
           return new Promise<void>((resolve, reject) => {
