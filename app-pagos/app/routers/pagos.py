@@ -230,12 +230,23 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
         if not card_token:
             raise HTTPException(status_code=502, detail="No fue posible tokenizar la tarjeta")
 
+        first_digit = payload.numero_tarjeta[0]
+        if first_digit == "4":
+            payment_method_id = "visa"
+        elif first_digit == "5":
+            payment_method_id = "master"
+        elif first_digit == "3":
+            payment_method_id = "amex"
+        else:
+            payment_method_id = "visa"
+
         external_reference = _generate_external_reference(payload.id_usuario)
         payment_payload = {
             "token": card_token,
             "transaction_amount": float(payload.monto),
             "description": payload.descripcion,
             "installments": 1,
+            "payment_method_id": payment_method_id,
             "external_reference": external_reference,
             "payer": {"email": payload.email},
         }
