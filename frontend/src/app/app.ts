@@ -318,7 +318,27 @@ export class App implements OnInit {
     // placeholder — el Brick ya toma el email del formulario al hacer submit
   }
 
+  private cargarSdkMP(): Promise<void> {
+    if ((window as any).MercadoPago) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://sdk.mercadopago.com/v2/mercadopago.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject();
+      document.head.appendChild(script);
+    });
+  }
+
   initBrick(): void {
+    this.cargarSdkMP()
+      .then(() => this.crearBrick())
+      .catch(() => {
+        this.mensajePago = 'Error cargando MercadoPago. Revisa tu conexión.';
+        this.cdr.detectChanges();
+      });
+  }
+
+  private crearBrick(): void {
     if (this.brickController) {
       this.brickController.unmount();
       this.brickController = null;
