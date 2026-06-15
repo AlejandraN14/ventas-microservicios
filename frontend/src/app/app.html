@@ -266,6 +266,15 @@
                 {{ mensajePago }}
               </div>
             }
+
+            @if (urlPagoActual) {
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+                <a [href]="urlPagoActual" target="_blank" class="btn-cta-secondary" style="text-align:center">Volver a MercadoPago</a>
+                <button class="btn-checkout w-100" (click)="confirmarPago()">
+                  ✓ Ya pagué — ver comprobante
+                </button>
+              </div>
+            }
           </div>
         </div>
       </aside>

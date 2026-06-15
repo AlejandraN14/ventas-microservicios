@@ -38,6 +38,7 @@ export class App implements OnInit {
   mostrarComprobante: boolean = false;
   comprobante: any = null;
   mostrarFormPago: boolean = false;
+  urlPagoActual: string = '';
 
   esperandoVerificacion: boolean = false;
   emailPendienteVerificacion: string = '';
@@ -268,6 +269,13 @@ export class App implements OnInit {
     }
   }
 
+  confirmarPago(): void {
+    this.mostrarComprobante = true;
+    this.mensajePago = '';
+    this.urlPagoActual = '';
+    this.cdr.detectChanges();
+  }
+
   cerrarComprobante(): void {
     this.mostrarComprobante = false;
     this.comprobante = null;
@@ -340,12 +348,11 @@ export class App implements OnInit {
           };
           this.carrito = [];
           this.total = 0;
-          this.mensajePago = '';
+          this.mensajePago = 'Redirigiendo a MercadoPago... Cuando termines el pago, regresa aquí y haz clic en "Ya pagué".';
+          this.urlPagoActual = urlPago;
           this.mostrarFormPago = false;
           this.cdr.detectChanges();
           window.open(urlPago, '_blank');
-          this.mostrarComprobante = true;
-          this.cdr.detectChanges();
           return;
         }
 
