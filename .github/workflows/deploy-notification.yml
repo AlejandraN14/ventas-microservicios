@@ -36,27 +36,38 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./notification-service
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      - name: Deploy en EC2 via SSM
+      - name: Obtener Instance ID
+        id: get_instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
             --filters "Name=ip-address,Values=${{ secrets.EC2_HOST }}" \
             --query "Reservations[0].Instances[0].InstanceId" \
             --output text)
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
 
-          echo "Instancia: $INSTANCE_ID"
+      - name: Escribir .env y redeploy en EC2 via SSM
+        run: |
+          INSTANCE_ID="${{ steps.get_instance.outputs.instance_id }}"
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":[
-              "set -a && source /home/ec2-user/notification-service/.env && set +a",
-              "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY",
-              "docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest",
+            --parameters commands='[
+              "echo SMTP_HOST=smtp.gmail.com > /home/ec2-user/notification-service/.env",
+              "echo SMTP_PORT=587 >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_USER=${{ secrets.NS_SMTP_USER }} >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_PASSWORD=${{ secrets.NS_SMTP_PASSWORD }} >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_SENDER_EMAIL=${{ secrets.NS_SMTP_SENDER_EMAIL }} >> /home/ec2-user/notification-service/.env",
+              "echo TWILIO_ACCOUNT_SID=${{ secrets.NS_TWILIO_ACCOUNT_SID }} >> /home/ec2-user/notification-service/.env",
+              "echo TWILIO_AUTH_TOKEN=${{ secrets.NS_TWILIO_AUTH_TOKEN }} >> /home/ec2-user/notification-service/.env",
+              "echo TWILIO_WHATSAPP_FROM=${{ secrets.NS_TWILIO_WHATSAPP_FROM }} >> /home/ec2-user/notification-service/.env",
+              "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 642528007536.dkr.ecr.us-east-1.amazonaws.com",
+              "docker pull 642528007536.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
               "docker stop notification-service 2>/dev/null || true",
               "docker rm notification-service 2>/dev/null || true",
-              "docker run -d --name notification-service --restart always -p 8003:8003 --env-file /home/ec2-user/notification-service/.env $ECR_REGISTRY/$ECR_REPOSITORY:latest",
+              "docker run -d --name notification-service --restart always -p 8003:8003 --env-file /home/ec2-user/notification-service/.env 642528007536.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
               "docker ps | grep notification-service"
-            ]}' \
+            ]' \
             --query "Command.CommandId" \
             --output text)
 
