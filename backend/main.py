@@ -103,7 +103,23 @@ def registrar_usuario(data: dict):
     try:
         usuario_existente = db.query(Usuario).filter(Usuario.email == email).first()
         if usuario_existente:
-            raise HTTPException(status_code=409, detail="El correo ya esta registrado")
+            if usuario_existente.verificado:
+                raise HTTPException(status_code=409, detail="El correo ya esta registrado")
+            # Cuenta existe pero no verificada: reenviar codigo
+            codigo = str(random.randint(100000, 999999))
+            db.query(CodigoVerificacion).filter(CodigoVerificacion.email == email).delete()
+            db.add(CodigoVerificacion(email=email, codigo=codigo))
+            db.commit()
+            if NOTIFICATION_SERVICE_URL:
+                try:
+                    requests.post(f"{NOTIFICATION_SERVICE_URL}/enviar-codigo-verificacion", json={
+                        "email": email,
+                        "nombre": usuario_existente.nombre,
+                        "codigo": codigo,
+                    }, timeout=8)
+                except Exception:
+                    pass
+            return {"id": usuario_existente.id, "nombre": usuario_existente.nombre, "email": usuario_existente.email, "verificado": False}
 
         usuario = Usuario(nombre=nombre, email=email, password_hash=hash_password(password), verificado=False)
         db.add(usuario)
