@@ -1,11 +1,13 @@
 import os
-import boto3
-from botocore.exceptions import ClientError
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from twilio.rest import Client as TwilioClient
-from typing import Optional
 
 app = FastAPI(title="Notification Service")
 
@@ -17,11 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Configuración AWS SES ────────────────────────────────────────
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-SES_SENDER = os.getenv("SES_SENDER_EMAIL", "")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+# ── Configuración SMTP ───────────────────────────────────────────
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_SENDER_EMAIL = os.getenv("SMTP_SENDER_EMAIL", SMTP_USER)
 
 # ── Configuración Twilio ─────────────────────────────────────────
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
@@ -45,13 +48,19 @@ class NotificacionCompra(BaseModel):
     whatsapp_destino: Optional[str] = None
 
 
-def _ses_client():
-    return boto3.client(
-        "ses",
-        region_name=AWS_REGION,
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+def _enviar_smtp(destinatario: str, asunto: str, html: str, texto: str):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = asunto
+    msg["From"] = SMTP_SENDER_EMAIL
+    msg["To"] = destinatario
+    msg.attach(MIMEText(texto, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as servidor:
+        servidor.ehlo()
+        servidor.starttls()
+        servidor.login(SMTP_USER, SMTP_PASSWORD)
+        servidor.sendmail(SMTP_SENDER_EMAIL, destinatario, msg.as_string())
 
 
 def _construir_email(data: NotificacionCompra) -> tuple[str, str]:
@@ -142,27 +151,21 @@ def notificar_compra(data: NotificacionCompra):
     resultados = {"email": None, "whatsapp": None}
     errores = []
 
-    # ── Enviar email por SES ─────────────────────────────────────
-    if not SES_SENDER:
-        errores.append("SES_SENDER_EMAIL no configurado")
+    # ── Enviar email por SMTP ────────────────────────────────────
+    if not SMTP_USER or not SMTP_PASSWORD:
+        errores.append("Credenciales SMTP no configuradas")
     else:
         try:
             html_body, texto_body = _construir_email(data)
-            ses = _ses_client()
-            ses.send_email(
-                Source=SES_SENDER,
-                Destination={"ToAddresses": [data.email_destino]},
-                Message={
-                    "Subject": {"Data": f"✅ Comprobante de pago #{data.numero_operacion} - TiendaOnline"},
-                    "Body": {
-                        "Text": {"Data": texto_body},
-                        "Html": {"Data": html_body},
-                    },
-                },
+            _enviar_smtp(
+                destinatario=data.email_destino,
+                asunto=f"✅ Comprobante de pago #{data.numero_operacion} - TiendaOnline",
+                html=html_body,
+                texto=texto_body,
             )
             resultados["email"] = "enviado"
-        except ClientError as e:
-            errores.append(f"SES error: {e.response['Error']['Message']}")
+        except Exception as e:
+            errores.append(f"SMTP error: {str(e)}")
             resultados["email"] = "error"
 
     # ── Enviar WhatsApp por Twilio ───────────────────────────────
@@ -229,10 +232,9 @@ class CodigoVerificacionRequest(BaseModel):
 
 @app.post("/enviar-codigo-verificacion")
 def enviar_codigo_verificacion(data: CodigoVerificacionRequest):
-    if not SES_SENDER:
-        raise HTTPException(status_code=500, detail="SES_SENDER_EMAIL no configurado")
+    if not SMTP_USER or not SMTP_PASSWORD:
+        raise HTTPException(status_code=500, detail="Credenciales SMTP no configuradas")
     try:
-        ses = _ses_client()
         html = f"""
         <div style="font-family:Inter,Arial,sans-serif;max-width:500px;margin:0 auto;background:#0F172A;color:#E2E8F0;border-radius:12px;overflow:hidden">
           <div style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);padding:32px;text-align:center">
@@ -247,17 +249,15 @@ def enviar_codigo_verificacion(data: CodigoVerificacionRequest):
           </div>
         </div>
         """
-        ses.send_email(
-            Source=SES_SENDER,
-            Destination={"ToAddresses": [data.email]},
-            Message={
-                "Subject": {"Data": "🔐 Código de verificación - TiendaOnline"},
-                "Body": {"Html": {"Data": html}, "Text": {"Data": f"Tu código de verificación es: {data.codigo}"}},
-            },
+        _enviar_smtp(
+            destinatario=data.email,
+            asunto="🔐 Código de verificación - TiendaOnline",
+            html=html,
+            texto=f"Tu código de verificación es: {data.codigo}",
         )
         return {"ok": True}
-    except ClientError as e:
-        raise HTTPException(status_code=500, detail=e.response["Error"]["Message"])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/health")
