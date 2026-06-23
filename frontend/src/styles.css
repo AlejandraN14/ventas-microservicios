@@ -244,13 +244,13 @@ html, body {
 
 /* ── AUTH CARD ───────────────────────────────────────────────── */
 .auth-card {
-  background: rgba(30,41,59,0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-2);
+  background: rgba(22,32,50,0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.13);
   border-radius: var(--r-xl);
-  padding: 2rem;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  padding: 2rem 2.25rem 2.25rem;
+  box-shadow: 0 28px 72px rgba(0,0,0,0.5), 0 0 0 1px rgba(59,130,246,0.07);
 }
 
 .auth-card-header {
@@ -301,12 +301,12 @@ html, body {
 
 .auth-field label {
   display: block;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--text-2);
-  margin-bottom: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #CBD5E1;
+  margin-bottom: 0.45rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
 }
 
 .input-icon-wrap {
@@ -325,22 +325,59 @@ html, body {
 
 .auth-input {
   width: 100%;
-  background: rgba(15,23,42,0.6);
-  border: 1px solid var(--border-2);
+  background: rgba(10,18,36,0.7);
+  border: 1px solid rgba(255,255,255,0.14);
   color: var(--text);
   border-radius: var(--r-md);
-  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
-  font-size: 0.9rem;
+  padding: 0.72rem 0.9rem 0.72rem 2.6rem;
+  min-height: 46px;
+  font-size: 0.92rem;
   font-family: inherit;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
   outline: none;
 }
 
 .auth-input::placeholder { color: var(--text-3); }
 
 .auth-input:focus {
+  background: rgba(10,18,36,0.9);
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.22);
+}
+
+/* Verification step — OTP-style */
+.verify-step {
+  text-align: center;
+  padding: 0.25rem 0 1.25rem;
+}
+
+.verify-step-icon {
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+  line-height: 1;
+}
+
+.verify-step-hint {
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0 0.5rem;
+}
+
+.auth-input--code {
+  padding-left: 2.6rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-align: center;
+  min-height: 54px;
+  border-color: rgba(59,130,246,0.3);
+}
+
+.auth-input--code:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
 }
 
 .btn-auth {
@@ -349,47 +386,50 @@ html, body {
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--blue) 0%, #2563EB 100%);
   color: #fff;
   border: none;
   border-radius: var(--r-md);
-  padding: 0.75rem 1rem;
-  font-size: 0.92rem;
+  padding: 0.82rem 1rem;
+  font-size: 0.93rem;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.3);
-  margin-top: 0.5rem;
+  transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+  box-shadow: 0 4px 18px rgba(59,130,246,0.35);
+  margin-top: 0.75rem;
 }
 
 .btn-auth:hover {
-  background: var(--blue-dark);
+  opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(59,130,246,0.4);
+  box-shadow: 0 7px 24px rgba(59,130,246,0.45);
 }
 
 .auth-active {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.75rem;
-  background: rgba(34,197,94,0.08);
-  border: 1px solid rgba(34,197,94,0.2);
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.04) 100%);
+  border: 1px solid rgba(34,197,94,0.25);
   border-radius: var(--r-md);
+  box-shadow: 0 2px 12px rgba(34,197,94,0.07);
 }
 
 .auth-active-icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: rgba(34,197,94,0.15);
+  background: linear-gradient(135deg, rgba(34,197,94,0.2) 0%, rgba(34,197,94,0.1) 100%);
   color: var(--success);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
+  font-size: 1.05rem;
   flex-shrink: 0;
+  border: 1px solid rgba(34,197,94,0.3);
 }
 
 .auth-active-name {
@@ -832,78 +872,118 @@ html, body {
 .payment-section { margin-top: 0.75rem; }
 
 .payment-card {
-  background: linear-gradient(160deg, #13203a 0%, #0f172a 100%);
-  border: 1px solid rgba(59,130,246,0.18);
+  background: linear-gradient(160deg, #0f1d35 0%, #0a1221 100%);
+  border: 1px solid rgba(59,130,246,0.22);
   border-radius: var(--r-lg);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .payment-header {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid rgba(59,130,246,0.12);
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid rgba(59,130,246,0.14);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  background: rgba(59,130,246,0.06);
+  background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.06) 100%);
 }
 
 .payment-kicker {
   display: block;
   color: #60A5FA;
-  font-size: 0.63rem;
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   margin-bottom: 0.15rem;
 }
 
 .payment-header h3 {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text);
 }
 
-.payment-body { padding: 0.9rem 1rem 1rem; }
+.payment-body { padding: 1rem 1.1rem 1.1rem; }
 
-.form-group { margin-bottom: 0.65rem; }
+.payment-fields-section {
+  margin-bottom: 0.5rem;
+}
+
+.payment-fields-title {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.form-group { margin-bottom: 0.7rem; }
 
 .form-group label {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  color: var(--text-3);
-  margin-bottom: 0.28rem;
+  color: #94A3B8;
+  margin-bottom: 0.32rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .payment-input {
-  background: rgba(15,23,42,0.8) !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
+  background: rgba(10,18,36,0.75) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
   color: var(--text) !important;
   border-radius: 9px !important;
-  min-height: 40px;
-  font-size: 0.87rem !important;
+  min-height: 42px;
+  font-size: 0.88rem !important;
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .payment-input::placeholder { color: var(--text-3) !important; }
 
 .payment-input:focus {
-  border-color: rgba(59,130,246,0.6) !important;
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important;
+  background: rgba(10,18,36,0.95) !important;
+  border-color: rgba(59,130,246,0.65) !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18) !important;
   outline: none;
+}
+
+/* Divider between personal data and card Brick */
+.payment-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.9rem 0 0.6rem;
+}
+
+.payment-divider::before,
+.payment-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.payment-divider span {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 /* Brick wrapper — aisla el formulario de MP del fondo blanco */
 #cardPaymentBrick_container {
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 10px;
   background: transparent;
 }
 
@@ -912,7 +992,7 @@ html, body {
   align-items: center;
   gap: 0.4rem;
   justify-content: center;
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
   color: var(--text-3);
   font-size: 0.72rem;
   font-weight: 500;
