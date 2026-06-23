@@ -53,7 +53,7 @@ jobs:
             --instance-ids "$INSTANCE_ID" \
             --document-name "AWS-RunShellScript" \
             --parameters commands='[
-              "echo SMTP_HOST=smtp-mail.outlook.com > /home/ec2-user/notification-service/.env",
+              "echo SMTP_HOST=smtp.gmail.com > /home/ec2-user/notification-service/.env",
               "echo SMTP_PORT=587 >> /home/ec2-user/notification-service/.env",
               "echo SMTP_USER=${{ secrets.NS_SMTP_USER }} >> /home/ec2-user/notification-service/.env",
               "echo SMTP_PASSWORD=${{ secrets.NS_SMTP_PASSWORD }} >> /home/ec2-user/notification-service/.env",
