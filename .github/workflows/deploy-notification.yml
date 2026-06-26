@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  ECR_REGISTRY: 642528007536.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: 548932260893.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: notification-service
 
 jobs:
@@ -24,8 +24,8 @@ jobs:
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_EK }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_EK }}
           aws-region: us-east-1
 
       - name: Login a Amazon ECR
@@ -40,7 +40,7 @@ jobs:
         id: get_instance
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=ip-address,Values=${{ secrets.EC2_HOST }}" \
+            --filters "Name=ip-address,Values=${{ secrets.EC2_HOST_EK }}" \
             --query "Reservations[0].Instances[0].InstanceId" \
             --output text)
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
@@ -55,17 +55,17 @@ jobs:
             --parameters commands='[
               "echo SMTP_HOST=smtp.gmail.com > /home/ec2-user/notification-service/.env",
               "echo SMTP_PORT=587 >> /home/ec2-user/notification-service/.env",
-              "echo SMTP_USER=${{ secrets.NS_SMTP_USER }} >> /home/ec2-user/notification-service/.env",
-              "echo SMTP_PASSWORD=${{ secrets.NS_SMTP_PASSWORD }} >> /home/ec2-user/notification-service/.env",
-              "echo SMTP_SENDER_EMAIL=${{ secrets.NS_SMTP_SENDER_EMAIL }} >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_USER=${{ secrets.NS_SMTP_USER_EK }} >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_PASSWORD=${{ secrets.NS_SMTP_PASSWORD_EK }} >> /home/ec2-user/notification-service/.env",
+              "echo SMTP_SENDER_EMAIL=${{ secrets.NS_SMTP_SENDER_EMAIL_EK }} >> /home/ec2-user/notification-service/.env",
               "echo TWILIO_ACCOUNT_SID=${{ secrets.NS_TWILIO_ACCOUNT_SID }} >> /home/ec2-user/notification-service/.env",
               "echo TWILIO_AUTH_TOKEN=${{ secrets.NS_TWILIO_AUTH_TOKEN }} >> /home/ec2-user/notification-service/.env",
               "echo TWILIO_WHATSAPP_FROM=${{ secrets.NS_TWILIO_WHATSAPP_FROM }} >> /home/ec2-user/notification-service/.env",
-              "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 642528007536.dkr.ecr.us-east-1.amazonaws.com",
-              "docker pull 642528007536.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
+              "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 548932260893.dkr.ecr.us-east-1.amazonaws.com",
+              "docker pull 548932260893.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
               "docker stop notification-service 2>/dev/null || true",
               "docker rm notification-service 2>/dev/null || true",
-              "docker run -d --name notification-service --restart always -p 8003:8003 --env-file /home/ec2-user/notification-service/.env 642528007536.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
+              "docker run -d --name notification-service --restart always -p 8003:8003 --env-file /home/ec2-user/notification-service/.env 548932260893.dkr.ecr.us-east-1.amazonaws.com/notification-service:latest",
               "docker ps | grep notification-service"
             ]' \
             --query "Command.CommandId" \

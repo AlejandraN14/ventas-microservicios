@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  ECR_REGISTRY: 642528007536.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: 548932260893.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: ventas-file-service
 
 jobs:
@@ -24,8 +24,8 @@ jobs:
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_EK }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_EK }}
           aws-region: us-east-1
 
       - name: Login a Amazon ECR
@@ -43,10 +43,10 @@ jobs:
 
       - name: Deploy en EC2 via SSM
         env:
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET_EK }}
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=ip-address,Values=${{ secrets.EC2_HOST }}" \
+            --filters "Name=ip-address,Values=${{ secrets.EC2_HOST_EK }}" \
             --query "Reservations[0].Instances[0].InstanceId" \
             --output text)
 
@@ -60,7 +60,7 @@ jobs:
               \"docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
               \"docker stop file-service 2>/dev/null || true\",
               \"docker rm file-service 2>/dev/null || true\",
-              \"docker run -d --name file-service --restart always -p 8004:8004 -e AWS_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e S3_BUCKET=${{ secrets.S3_BUCKET }} -e NOTIFICATION_SERVICE_URL=http://172.17.0.1:8003 $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
+              \"docker run -d --name file-service --restart always -p 8004:8004 -e AWS_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_EK }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_EK }} -e S3_BUCKET=${{ secrets.S3_BUCKET_EK }} -e NOTIFICATION_SERVICE_URL=http://172.17.0.1:8003 $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
               \"docker ps | grep file-service\"
             ]}" \
             --query "Command.CommandId" \
