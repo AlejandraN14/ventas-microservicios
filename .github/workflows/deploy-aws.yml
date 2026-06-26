@@ -99,18 +99,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_EK }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Render task definition
-        id: render
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ matrix.service.task_definition }}
-          container-name: ${{ matrix.service.container }}
-          image: ${{ env.ECR_REGISTRY }}/${{ matrix.service.image }}:${{ github.sha }}
+      - name: Deploy to ECS via CLI
+        run: |
+          NEW_IMAGE="${{ env.ECR_REGISTRY }}/${{ matrix.service.image }}:${{ github.sha }}"
+          CONTAINER="${{ matrix.service.container }}"
 
-      - name: Deploy ECS service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.render.outputs.task-definition }}
-          service: ${{ matrix.service.ecs_service }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$(jq --arg IMAGE "$NEW_IMAGE" --arg NAME "$CONTAINER" \
+              '(.containerDefinitions[] | select(.name == $NAME) | .image) = $IMAGE' \
+              ${{ matrix.service.task_definition }})" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          echo "Nueva task definition: $TASK_DEF_ARN"
+
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ matrix.service.ecs_service }} \
+            --task-definition "$TASK_DEF_ARN"
+
+          echo "✅ Servicio actualizado"
