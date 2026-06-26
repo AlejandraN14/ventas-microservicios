@@ -101,20 +101,10 @@ jobs:
 
       - name: Deploy to ECS via CLI
         run: |
-          NEW_IMAGE="${{ env.ECR_REGISTRY }}/${{ matrix.service.image }}:${{ github.sha }}"
-          CONTAINER="${{ matrix.service.container }}"
-
-          TASK_DEF_ARN=$(aws ecs register-task-definition \
-            --cli-input-json "$(jq --arg IMAGE "$NEW_IMAGE" --arg NAME "$CONTAINER" \
-              '(.containerDefinitions[] | select(.name == $NAME) | .image) = $IMAGE' \
-              ${{ matrix.service.task_definition }})" \
-            --query 'taskDefinition.taskDefinitionArn' --output text)
-
-          echo "Nueva task definition: $TASK_DEF_ARN"
-
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ matrix.service.ecs_service }} \
-            --task-definition "$TASK_DEF_ARN"
-
-          echo "✅ Servicio actualizado"
+            --force-new-deployment \
+            --query "service.{Servicio:serviceName, Corriendo:runningCount}" \
+            --output table
+          echo "✅ Servicio ${{ matrix.service.ecs_service }} actualizado"
