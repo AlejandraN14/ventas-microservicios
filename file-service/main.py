@@ -27,12 +27,11 @@ LIMITE_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB por usuario
 
 
 def _s3():
-    return boto3.client(
-        "s3",
-        region_name=AWS_REGION,
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+    kwargs = {"region_name": AWS_REGION}
+    if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        kwargs["aws_access_key_id"] = AWS_ACCESS_KEY_ID
+        kwargs["aws_secret_access_key"] = AWS_SECRET_ACCESS_KEY
+    return boto3.client("s3", **kwargs)
 
 
 def _prefijo(usuario_id: int) -> str:
