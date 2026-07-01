@@ -178,14 +178,16 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         <select id="f-tipo">
           <option value="">Todos</option>
           <option value="login">login</option>
-          <option value="logout">logout</option>
+          <option value="cierre_sesion">cierre_sesion</option>
+          <option value="registro_usuario">registro_usuario</option>
+          <option value="validacion_cuenta">validacion_cuenta</option>
           <option value="compra">compra</option>
           <option value="pago_exitoso">pago_exitoso</option>
           <option value="pago_fallido">pago_fallido</option>
           <option value="subida_archivo">subida_archivo</option>
           <option value="eliminacion_archivo">eliminacion_archivo</option>
           <option value="crear_producto">crear_producto</option>
-          <option value="eliminar_producto">eliminar_producto</option>
+          <option value="error_sistema">error_sistema</option>
         </select>
       </label>
       <label>Usuario ID
