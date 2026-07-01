@@ -101,10 +101,16 @@ jobs:
 
       - name: Deploy to ECS via CLI
         run: |
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://${{ matrix.service.task_definition }} \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ matrix.service.ecs_service }} \
+            --task-definition "$TASK_DEF_ARN" \
             --force-new-deployment \
             --query "service.{Servicio:serviceName, Corriendo:runningCount}" \
             --output table
-          echo "✅ Servicio ${{ matrix.service.ecs_service }} actualizado"
+          echo "✅ Servicio ${{ matrix.service.ecs_service }} actualizado con $TASK_DEF_ARN"
