@@ -114,58 +114,152 @@ DASHBOARD_HTML = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard de Auditoría</title>
+  <title>Dashboard TiendaOnline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-    header { background: #1a73e8; color: white; padding: 16px 24px; }
-    header h1 { font-size: 1.4rem; }
-    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
-    .container { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
-    .filters { background: white; border-radius: 8px; padding: 16px; margin-bottom: 20px;
-               display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
-               box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-    .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; font-weight: 600; }
-    .filters select, .filters input {
-      padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px;
-      font-size: 0.9rem; min-width: 140px;
+    :root {
+      --bg:        #0F172A;
+      --bg-2:      #111827;
+      --bg-card:   #1E293B;
+      --bg-card-2: #162032;
+      --blue:      #3B82F6;
+      --blue-dark: #2563EB;
+      --violet:    #8B5CF6;
+      --success:   #22C55E;
+      --text:      #F8FAFC;
+      --text-2:    #94A3B8;
+      --text-3:    #64748B;
+      --border:    rgba(255,255,255,0.08);
+      --border-2:  rgba(255,255,255,0.14);
+      --r-xl: 24px; --r-lg: 16px; --r-md: 12px;
     }
-    .filters button {
-      padding: 8px 20px; background: #1a73e8; color: white; border: none;
-      border-radius: 5px; cursor: pointer; font-size: 0.9rem; height: 36px;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased; min-height: 100vh;
     }
-    .filters button:hover { background: #1558b0; }
-    .filters button.reset { background: #666; }
-    .filters button.reset:hover { background: #444; }
-    .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-    .stat-card { background: white; border-radius: 8px; padding: 14px 20px; flex: 1; min-width: 150px;
-                 box-shadow: 0 1px 4px rgba(0,0,0,.1); text-align: center; }
-    .stat-card .num { font-size: 2rem; font-weight: 700; color: #1a73e8; }
-    .stat-card .lbl { font-size: 0.78rem; color: #888; margin-top: 4px; }
-    table { width: 100%; border-collapse: collapse; background: white;
-            border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-    thead { background: #1a73e8; color: white; }
-    th, td { padding: 10px 14px; text-align: left; font-size: 0.87rem; }
-    tbody tr:nth-child(even) { background: #f8f9fa; }
-    tbody tr:hover { background: #e8f0fe; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
-             font-size: 0.78rem; font-weight: 600; }
-    .badge-backend { background: #d1e8ff; color: #0052cc; }
-    .badge-app-pagos { background: #d4edda; color: #155724; }
-    .badge-file-service { background: #fff3cd; color: #856404; }
-    .badge-audit-service { background: #e2d9f3; color: #4a235a; }
-    .detalle { max-width: 280px; font-size: 0.78rem; color: #555;
-               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #status { text-align: center; padding: 20px; color: #888; font-size: 0.9rem; }
+
+    /* NAVBAR */
+    nav {
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 0; position: sticky; top: 0; z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--text); font-weight: 700; font-size: 1.05rem; letter-spacing: -0.3px; }
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.9rem; color: #fff; flex-shrink: 0;
+    }
+    .nav-badge {
+      background: rgba(59,130,246,0.12); color: #93C5FD;
+      border: 1px solid rgba(59,130,246,0.25); border-radius: 999px;
+      padding: 0.28rem 0.75rem; font-size: 0.72rem; font-weight: 600;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .nav-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 5px var(--success); }
+
+    /* CONTAINER */
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* PAGE HEADING */
+    .page-heading { margin-bottom: 1.75rem; }
+    .page-heading h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; color: var(--text); margin-bottom: 0.25rem; }
+    .page-heading p { color: var(--text-2); font-size: 0.88rem; }
+
+    /* FILTERS CARD */
+    .filters-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
+      display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;
+    }
+    .filters-card label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; color: #CBD5E1; text-transform: uppercase; letter-spacing: 0.07em; }
+    .filters-card select, .filters-card input {
+      background: rgba(10,18,36,0.7); border: 1px solid var(--border-2); color: var(--text);
+      border-radius: var(--r-md); padding: 0.55rem 0.85rem; font-size: 0.88rem;
+      font-family: inherit; min-width: 140px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .filters-card select:focus, .filters-card input:focus {
+      border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    }
+    .filters-card select option { background: #1E293B; }
+    .filters-card input::placeholder { color: var(--text-3); }
+    .btn-filter {
+      background: var(--blue); color: #fff; border: none; border-radius: var(--r-md);
+      padding: 0.58rem 1.25rem; font-size: 0.86rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.12s;
+      box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+    }
+    .btn-filter:hover { background: var(--blue-dark); transform: translateY(-1px); }
+    .btn-reset {
+      background: transparent; color: var(--text-2); border: 1px solid var(--border-2);
+      border-radius: var(--r-md); padding: 0.58rem 1.1rem; font-size: 0.86rem;
+      font-weight: 600; cursor: pointer; font-family: inherit; transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-reset:hover { color: var(--text); border-color: rgba(255,255,255,0.28); }
+
+    /* STATS */
+    .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 1.1rem 1.5rem; flex: 1; min-width: 140px; text-align: center;
+    }
+    .stat-num { font-size: 2rem; font-weight: 900; color: var(--blue); letter-spacing: -1px; line-height: 1; }
+    .stat-lbl { font-size: 0.75rem; color: var(--text-3); margin-top: 0.35rem; font-weight: 500; }
+
+    /* TABLE */
+    .table-wrap {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: linear-gradient(90deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.08) 100%); border-bottom: 1px solid var(--border-2); }
+    th { padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    td { padding: 0.75rem 1rem; font-size: 0.86rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(59,130,246,0.04); }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700; }
+    .badge-backend       { background: rgba(59,130,246,0.15);  color: #93C5FD; border: 1px solid rgba(59,130,246,0.25); }
+    .badge-app-pagos     { background: rgba(34,197,94,0.12);   color: #4ADE80; border: 1px solid rgba(34,197,94,0.22); }
+    .badge-file-service  { background: rgba(251,191,36,0.12);  color: #FCD34D; border: 1px solid rgba(251,191,36,0.22); }
+    .badge-audit-service { background: rgba(139,92,246,0.12);  color: #C4B5FD; border: 1px solid rgba(139,92,246,0.22); }
+
+    .detalle { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-3); font-size: 0.8rem; font-family: monospace; }
+    #status { text-align: center; padding: 2rem; color: var(--text-3); font-size: 0.9rem; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Dashboard de Auditoría — Ventas Microservicios</h1>
-    <p>Registro de eventos del sistema en tiempo real</p>
-  </header>
+  <nav>
+    <div class="nav-inner">
+      <a class="nav-brand" href="#">
+        <div class="brand-icon">T</div>
+        <span>TiendaOnline</span>
+      </a>
+      <div class="nav-badge">
+        <span class="nav-badge-dot"></span>
+        Dashboard de Auditoría
+      </div>
+    </div>
+  </nav>
+
   <div class="container">
-    <div class="filters">
+    <div class="page-heading">
+      <h1>Dashboard TiendaOnline</h1>
+      <p>Registro de eventos del sistema en tiempo real — se actualiza cada 30 segundos</p>
+    </div>
+
+    <div class="filters-card">
       <label>Servicio
         <select id="f-servicio">
           <option value="">Todos</option>
@@ -201,30 +295,33 @@ DASHBOARD_HTML = """<!DOCTYPE html>
           <option value="500">500</option>
         </select>
       </label>
-      <button onclick="cargar()">Filtrar</button>
-      <button class="reset" onclick="resetFiltros()">Limpiar</button>
+      <button class="btn-filter" onclick="cargar()">Filtrar</button>
+      <button class="btn-reset" onclick="resetFiltros()">Limpiar</button>
     </div>
 
     <div class="stats">
-      <div class="stat-card"><div class="num" id="s-total">—</div><div class="lbl">Eventos mostrados</div></div>
-      <div class="stat-card"><div class="num" id="s-logins">—</div><div class="lbl">Logins</div></div>
-      <div class="stat-card"><div class="num" id="s-compras">—</div><div class="lbl">Compras</div></div>
-      <div class="stat-card"><div class="num" id="s-archivos">—</div><div class="lbl">Archivos subidos</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">Eventos mostrados</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-logins">—</div><div class="stat-lbl">Logins</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-compras">—</div><div class="stat-lbl">Compras</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-archivos">—</div><div class="stat-lbl">Archivos subidos</div></div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Timestamp</th>
-          <th>Servicio</th>
-          <th>Tipo evento</th>
-          <th>Usuario</th>
-          <th>Detalle</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="status">Cargando eventos...</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Servicio</th>
+            <th>Tipo evento</th>
+            <th>Usuario</th>
+            <th>IP Origen</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="status">Cargando eventos...</div>
+    </div>
   </div>
 
   <script>
@@ -277,6 +374,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
               <td>${badgeServicio(e.servicio)}</td>
               <td>${e.tipo_evento}</td>
               <td>${e.usuario_id ?? '—'}</td>
+              <td style="color:var(--text-3);font-size:0.8rem">${e.ip_origen ?? '—'}</td>
               <td class="detalle" title="${formatDetalle(e.detalle).replace(/"/g,'&quot;')}">${formatDetalle(e.detalle)}</td>
             `;
             tbody.appendChild(tr);
