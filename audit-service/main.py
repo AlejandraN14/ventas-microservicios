@@ -8,7 +8,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine
+from sqlalchemy import Column, DateTime, Integer, String, Text, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/ventasdb")
@@ -28,11 +28,16 @@ class EventoAuditoria(Base):
     tipo_evento = Column(String(50), nullable=False)
     usuario_id = Column(Integer, nullable=True)
     detalle = Column(Text, nullable=True)
+    ip_origen = Column(String(45), nullable=True)
 
 
 app = FastAPI(title="Audit Service")
 
 Base.metadata.create_all(bind=engine)
+
+with engine.connect() as _conn:
+    _conn.execute(text("ALTER TABLE auditoria ADD COLUMN IF NOT EXISTS ip_origen VARCHAR(45)"))
+    _conn.commit()
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +53,7 @@ class EventoIn(BaseModel):
     tipo_evento: str
     usuario_id: Optional[int] = None
     detalle: Optional[dict] = None
+    ip_origen: Optional[str] = None
 
 
 @app.post("/eventos")
@@ -61,6 +67,7 @@ def registrar_evento(ev: EventoIn):
             tipo_evento=ev.tipo_evento,
             usuario_id=ev.usuario_id,
             detalle=json.dumps(ev.detalle) if ev.detalle else None,
+            ip_origen=ev.ip_origen,
         )
         db.add(evento)
         db.commit()
@@ -94,6 +101,7 @@ def listar_eventos(
                 "tipo_evento": e.tipo_evento,
                 "usuario_id": e.usuario_id,
                 "detalle": json.loads(e.detalle) if e.detalle else None,
+                "ip_origen": e.ip_origen,
             }
             for e in eventos
         ]

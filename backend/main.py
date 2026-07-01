@@ -3,8 +3,9 @@ import os
 import random
 import secrets
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import requests
 
 from database import engine, SessionLocal, Base
@@ -32,18 +33,37 @@ app.add_middleware(
 )
 
 
-def _auditar(servicio: str, tipo_evento: str, usuario_id=None, detalle: dict = None):
+def _get_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else ""
+
+
+def _auditar(servicio: str, tipo_evento: str, usuario_id=None, detalle: dict = None, ip_origen: str = None):
     if not AUDIT_SERVICE_URL:
         return
     try:
         requests.post(
             f"{AUDIT_SERVICE_URL}/eventos",
             json={"servicio": servicio, "tipo_evento": tipo_evento,
-                  "usuario_id": usuario_id, "detalle": detalle or {}},
+                  "usuario_id": usuario_id, "detalle": detalle or {},
+                  "ip_origen": ip_origen},
             timeout=4,
         )
     except Exception:
         pass
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        raise exc
+    _auditar("backend", "error_sistema",
+             detalle={"error": type(exc).__name__ + ": " + str(exc)[:200],
+                      "path": request.url.path},
+             ip_origen=_get_ip(request))
+    return JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
 
 
 def get_db():
@@ -102,7 +122,7 @@ seed_productos()
 
 
 @app.post("/usuarios/registro")
-def registrar_usuario(data: dict):
+def registrar_usuario(data: dict, request: Request):
     nombre = str(data.get("nombre", "")).strip()
     email = str(data.get("email", "")).strip().lower()
     password = str(data.get("password", ""))
@@ -155,13 +175,15 @@ def registrar_usuario(data: dict):
             except Exception:
                 pass
 
+        _auditar("backend", "registro_usuario", usuario_id=usuario.id,
+                 detalle={"email": email, "nombre": nombre}, ip_origen=_get_ip(request))
         return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email, "verificado": False}
     finally:
         db.close()
 
 
 @app.post("/usuarios/verificar")
-def verificar_cuenta(data: dict):
+def verificar_cuenta(data: dict, request: Request):
     email = str(data.get("email", "")).strip().lower()
     codigo = str(data.get("codigo", "")).strip()
 
@@ -181,6 +203,8 @@ def verificar_cuenta(data: dict):
         usuario.verificado = True
         db.delete(registro)
         db.commit()
+        _auditar("backend", "validacion_cuenta", usuario_id=usuario.id,
+                 detalle={"email": email}, ip_origen=_get_ip(request))
         return {"mensaje": "Cuenta verificada correctamente"}
     finally:
         db.close()
@@ -203,6 +227,15 @@ def iniciar_sesion(data: dict):
         return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email}
     finally:
         db.close()
+
+
+@app.post("/usuarios/logout")
+def cerrar_sesion(data: dict, request: Request):
+    usuario_id = data.get("usuario_id")
+    email = str(data.get("email", ""))
+    _auditar("backend", "cierre_sesion", usuario_id=usuario_id,
+             detalle={"email": email}, ip_origen=_get_ip(request))
+    return {"ok": True}
 
 
 @app.get("/productos")

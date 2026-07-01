@@ -20,4 +20,8 @@ export class UsuariosService {
   verificar(email: string, codigo: string): Observable<any> {
     return this.http.post(`${getApiBaseUrl()}/usuarios/verificar`, { email, codigo });
   }
+
+  logout(usuarioId: number, email: string): Observable<any> {
+    return this.http.post(`${getApiBaseUrl()}/usuarios/logout`, { usuario_id: usuarioId, email });
+  }
 }

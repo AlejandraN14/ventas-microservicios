@@ -166,6 +166,9 @@ export class App implements OnInit {
   }
 
   cerrarSesion(): void {
+    if (this.usuario?.id) {
+      this.usuariosService.logout(this.usuario.id, this.usuario.email).subscribe({ error: () => {} });
+    }
     this.usuario = null;
     this.carrito = [];
     this.total = 0;
