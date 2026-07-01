@@ -4,16 +4,17 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::548932260893:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-backend:latest",
+      "image": "548932260893.dkr.ecr.us-east-1.amazonaws.com/ventas-backend:latest",
       "portMappings": [{"containerPort": 8001, "protocol": "tcp"}],
       "environment": [
-        {"name": "DATABASE_URL", "value": "postgresql://postgres:postgres123@ventasdb.conowcgkyqp9.us-east-1.rds.amazonaws.com:5432/ventasdb"},
-        {"name": "NOTIFICATION_SERVICE_URL", "value": "http://13.220.253.76:8003"},
-        {"name": "PAGOS_SERVICE_URL", "value": "http://ventas-alb-333663717.us-east-1.elb.amazonaws.com:8002"}
+        {"name": "DATABASE_URL", "value": "postgresql://postgres:er0ek0ec0@ventasdb.co1sk2kasdj8.us-east-1.rds.amazonaws.com:5432/ventasdb"},
+        {"name": "NOTIFICATION_SERVICE_URL", "value": "http://54.204.22.116:8003"},
+        {"name": "PAGOS_SERVICE_URL", "value": "http://ventas-alb-1875844941.us-east-1.elb.amazonaws.com:8002"},
+        {"name": "AUDIT_SERVICE_URL", "value": "http://54.204.22.116:8005"}
       ],
       "essential": true,
       "logConfiguration": {

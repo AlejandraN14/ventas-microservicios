@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-const FILE_SERVICE_URL = 'http://13.220.253.76:8004';
+const FILE_SERVICE_URL = 'http://54.204.22.116:8004'; // EC2 file-service
 
 @Injectable({ providedIn: 'root' })
 export class ArchivosService {

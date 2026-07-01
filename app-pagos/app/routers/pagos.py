@@ -31,7 +31,22 @@ MP_SUCCESS_URL = os.getenv("MP_SUCCESS_URL", "https://www.mercadopago.cl")
 MP_FAILURE_URL = os.getenv("MP_FAILURE_URL", "https://www.mercadopago.cl")
 MP_PENDING_URL = os.getenv("MP_PENDING_URL", "https://www.mercadopago.cl")
 MP_WEBHOOK_URL = os.getenv("MP_WEBHOOK_URL")
+AUDIT_SERVICE_URL = os.getenv("AUDIT_SERVICE_URL", "")
 TIMEOUT_PAGO_SEGUNDOS = 120
+
+
+def _auditar(tipo_evento: str, usuario_id=None, detalle: dict = None):
+    if not AUDIT_SERVICE_URL:
+        return
+    try:
+        requests.post(
+            f"{AUDIT_SERVICE_URL}/eventos",
+            json={"servicio": "app-pagos", "tipo_evento": tipo_evento,
+                  "usuario_id": usuario_id, "detalle": detalle or {}},
+            timeout=4,
+        )
+    except Exception:
+        pass
 
 OPERACIONES_PAGO: Dict[int, dict] = {}
 OPERACIONES_LOCK = Lock()
@@ -267,6 +282,13 @@ def procesar_pago_directo(payload: PagoDirectoRequest):
         estado = _map_mp_status(payment_data.get("status"))
         id_operacion = _registrar_operacion(payload, external_reference, mp_payment_id, estado)
 
+        if estado == "PAGADO":
+            _auditar("pago_exitoso", usuario_id=payload.id_usuario,
+                     detalle={"monto": float(payload.monto), "mp_payment_id": mp_payment_id})
+        else:
+            _auditar("pago_fallido", usuario_id=payload.id_usuario,
+                     detalle={"monto": float(payload.monto), "estado": estado})
+
         logger.info("[pagos] Pago directo creado id_operacion=%s mp_payment_id=%s estado=%s", id_operacion, mp_payment_id, estado)
         return PagoDirectoResponse(
             success=True,
@@ -333,6 +355,13 @@ def pago_con_token(payload: PagoConTokenRequest):
             monto=payload.transaction_amount,
         )
         id_operacion = _registrar_operacion(fake_req, external_reference, mp_payment_id, estado)
+
+        if estado == "PAGADO":
+            _auditar("pago_exitoso", usuario_id=payload.id_usuario,
+                     detalle={"monto": float(payload.transaction_amount), "mp_payment_id": mp_payment_id})
+        else:
+            _auditar("pago_fallido", usuario_id=payload.id_usuario,
+                     detalle={"monto": float(payload.transaction_amount), "estado": estado})
 
         logger.info("[pagos] Pago con-token id_operacion=%s mp_payment_id=%s estado=%s", id_operacion, mp_payment_id, estado)
         return PagoDirectoResponse(

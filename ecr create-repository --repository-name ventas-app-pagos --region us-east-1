@@ -1,0 +1,16 @@
+{
+    "repository": {
+        "repositoryArn": "arn:aws:ecr:us-east-1:548932260893:repository/ventas-backend",
+        "registryId": "548932260893",
+        "repositoryName": "ventas-backend",
+        "repositoryUri": "548932260893.dkr.ecr.us-east-1.amazonaws.com/ventas-backend",
+        "createdAt": "2026-06-26T16:25:54.025000-04:00",
+        "imageTagMutability": "MUTABLE",
+        "imageScanningConfiguration": {
+            "scanOnPush": false
+        },
+        "encryptionConfiguration": {
+            "encryptionType": "AES256"
+        }
+    }
+}

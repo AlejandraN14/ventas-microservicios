@@ -60,7 +60,7 @@ jobs:
               \"docker pull $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
               \"docker stop file-service 2>/dev/null || true\",
               \"docker rm file-service 2>/dev/null || true\",
-              \"docker run -d --name file-service --restart always -p 8004:8004 -e AWS_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_EK }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_EK }} -e S3_BUCKET=${{ secrets.S3_BUCKET_EK }} -e NOTIFICATION_SERVICE_URL=http://172.17.0.1:8003 $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
+              \"docker run -d --name file-service --restart always -p 8004:8004 -e AWS_REGION=us-east-1 -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_EK }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_EK }} -e S3_BUCKET=${{ secrets.S3_BUCKET_EK }} -e NOTIFICATION_SERVICE_URL=http://172.17.0.1:8003 -e AUDIT_SERVICE_URL=http://172.17.0.1:8005 $ECR_REGISTRY/$ECR_REPOSITORY:latest\",
               \"docker ps | grep file-service\"
             ]}" \
             --query "Command.CommandId" \

@@ -4,18 +4,19 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::548932260893:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "app-pagos",
-      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-app-pagos:latest",
+      "image": "548932260893.dkr.ecr.us-east-1.amazonaws.com/ventas-app-pagos:latest",
       "portMappings": [{"containerPort": 8002, "protocol": "tcp"}],
       "environment": [
         {"name": "MP_ACCESS_TOKEN", "value": "TEST-814075209976331-051201-facbe38060521cadf0860a4aa5cf35d2-459454378"},
         {"name": "MP_PUBLIC_KEY", "value": "TEST-814a0f21-a76f-435a-ad54-a6c99077e663"},
-        {"name": "MP_SUCCESS_URL", "value": "http://ventas-alb-333663717.us-east-1.elb.amazonaws.com"},
-        {"name": "MP_FAILURE_URL", "value": "http://ventas-alb-333663717.us-east-1.elb.amazonaws.com"},
-        {"name": "MP_PENDING_URL", "value": "http://ventas-alb-333663717.us-east-1.elb.amazonaws.com"}
+        {"name": "MP_SUCCESS_URL", "value": "http://ventas-alb-1875844941.us-east-1.elb.amazonaws.com"},
+        {"name": "MP_FAILURE_URL", "value": "http://ventas-alb-1875844941.us-east-1.elb.amazonaws.com"},
+        {"name": "MP_PENDING_URL", "value": "http://ventas-alb-1875844941.us-east-1.elb.amazonaws.com"},
+        {"name": "AUDIT_SERVICE_URL", "value": "http://54.204.22.116:8005"}
       ],
       "essential": true,
       "logConfiguration": {

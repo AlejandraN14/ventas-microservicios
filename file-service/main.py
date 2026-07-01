@@ -23,7 +23,22 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 S3_BUCKET = os.getenv("S3_BUCKET", "")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "")
+AUDIT_SERVICE_URL = os.getenv("AUDIT_SERVICE_URL", "")
 LIMITE_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB por usuario
+
+
+def _auditar(tipo_evento: str, usuario_id=None, detalle: dict = None):
+    if not AUDIT_SERVICE_URL:
+        return
+    try:
+        requests.post(
+            f"{AUDIT_SERVICE_URL}/eventos",
+            json={"servicio": "file-service", "tipo_evento": tipo_evento,
+                  "usuario_id": usuario_id, "detalle": detalle or {}},
+            timeout=4,
+        )
+    except Exception:
+        pass
 
 
 def _s3():
@@ -75,6 +90,9 @@ async def subir_archivo(
 
     nuevo_usado = usado + tamano
     disponible = LIMITE_BYTES - nuevo_usado
+
+    _auditar("subida_archivo", usuario_id=usuario_id,
+             detalle={"nombre_archivo": archivo.filename, "tamano_bytes": tamano})
 
     if whatsapp and NOTIFICATION_SERVICE_URL:
         try:
@@ -140,6 +158,8 @@ def eliminar_archivo(usuario_id: int, nombre_archivo: str):
     clave = f"{_prefijo(usuario_id)}{nombre_archivo}"
     try:
         _s3().delete_object(Bucket=S3_BUCKET, Key=clave)
+        _auditar("eliminacion_archivo", usuario_id=usuario_id,
+                 detalle={"nombre_archivo": nombre_archivo})
         return {"ok": True, "eliminado": nombre_archivo}
     except ClientError as e:
         raise HTTPException(status_code=500, detail=str(e))

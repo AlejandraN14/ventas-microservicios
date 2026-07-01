@@ -4,11 +4,11 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::642528007536:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::548932260893:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "frontend",
-      "image": "642528007536.dkr.ecr.us-east-1.amazonaws.com/ventas-frontend:latest",
+      "image": "548932260893.dkr.ecr.us-east-1.amazonaws.com/ventas-frontend:latest",
       "portMappings": [{"containerPort": 80, "protocol": "tcp"}],
       "essential": true,
       "logConfiguration": {

@@ -21,6 +21,7 @@ Base.metadata.create_all(bind=engine)
 # URL del microservicio de pagos; se puede cambiar desde variables de entorno.
 PAGOS_SERVICE_URL = os.getenv("PAGOS_SERVICE_URL", "http://app-pagos:8002")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "")
+AUDIT_SERVICE_URL = os.getenv("AUDIT_SERVICE_URL", "")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,6 +30,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _auditar(servicio: str, tipo_evento: str, usuario_id=None, detalle: dict = None):
+    if not AUDIT_SERVICE_URL:
+        return
+    try:
+        requests.post(
+            f"{AUDIT_SERVICE_URL}/eventos",
+            json={"servicio": servicio, "tipo_evento": tipo_evento,
+                  "usuario_id": usuario_id, "detalle": detalle or {}},
+            timeout=4,
+        )
+    except Exception:
+        pass
 
 
 def get_db():
@@ -184,6 +199,7 @@ def iniciar_sesion(data: dict):
         if not usuario.verificado:
             raise HTTPException(status_code=403, detail="Debes verificar tu cuenta antes de iniciar sesion")
 
+        _auditar("backend", "login", usuario_id=usuario.id, detalle={"email": email})
         return {"id": usuario.id, "nombre": usuario.nombre, "email": usuario.email}
     finally:
         db.close()
@@ -222,6 +238,7 @@ def crear_producto(data: dict):
         db.add(producto)
         db.commit()
         db.refresh(producto)
+        _auditar("backend", "crear_producto", detalle={"nombre": nombre, "precio": precio})
         return serializar_producto(producto)
     finally:
         db.close()
@@ -366,6 +383,13 @@ def procesar_pagos(data: dict):
         if usuario_id:
             db.query(CarritoItem).filter(CarritoItem.usuario_id == usuario_id).delete()
             db.commit()
+
+        if estado == "PAGADO":
+            _auditar("backend", "compra", usuario_id=usuario_id,
+                     detalle={"monto": nueva_venta.monto, "metodo_pago": nueva_venta.metodo_pago})
+        else:
+            _auditar("backend", "pago_fallido", usuario_id=usuario_id,
+                     detalle={"monto": nueva_venta.monto, "estado": estado})
 
         if NOTIFICATION_SERVICE_URL and estado == "PAGADO":
             try:
